@@ -1,6 +1,5 @@
 // Import Libs
 const express = require('express') // create web server
-const bcrypt = require('bcryptjs') // encrypt passwords
 
 // Import db file configs
 require('./db/mongoose')
@@ -11,7 +10,7 @@ const taskRouter = require('./routers/task')
 
 // Initialize App
 const app = express()
-const port = process.env.PORT || 3000 // Define port for heroku or local dev
+const port = process.env.PORT// Define port for heroku or local dev
 
 // Express use JSON format
 app.use(express.json())
