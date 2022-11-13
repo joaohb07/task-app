@@ -1,0 +1,27 @@
+{
+  "name": "stack-app",
+  "version": "1.0.0",
+  "description": "A Stack App using Node.js with mongodb.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaohb07/Stack-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joaohb07/Stack-app/issues"
+  },
+  "homepage": "https://github.com/joaohb07/Stack-app#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongodb": "^4.11.0",
+    "mongoose": "^6.7.2",
+    "validator": "^13.7.0"
+  }
+}
