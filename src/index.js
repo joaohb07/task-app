@@ -1,5 +1,6 @@
 // Import Libs
-const express = require('express')
+const express = require('express') // create web server
+const bcrypt = require('bcryptjs') // encrypt passwords
 
 // Import db file configs
 require('./db/mongoose')

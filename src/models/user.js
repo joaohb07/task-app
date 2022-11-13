@@ -1,9 +1,10 @@
 // Import libs
 const mongoose = require('mongoose')
 const validator = require('validator')
+const bcrypt = require('bcryptjs')
 
-// Create User model, using mongoose
-const User = mongoose.model('User', {
+// Define new Mongoose Schema - for bcrypt validation with middleware
+const userSchema = new mongoose.Schema({
     name: { // define name
         type: String, // name is a string
         required: true, // name is required
@@ -39,6 +40,19 @@ const User = mongoose.model('User', {
         }
     }
 })
+
+userSchema.pre('save', async function (next) {
+    const user = this // this - user object about to be saved
+
+    if (user.isModified('password')) {
+        user.password = await bcrypt.hash(user.password, 8) // 8 = rounds number, standard
+    }
+
+    next()
+})
+
+// Create User model, using mongoose
+const User = mongoose.model('User', userSchema)
 
 // Export User
 module.exports = User 

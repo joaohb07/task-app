@@ -72,7 +72,17 @@ router.patch('/users/:id', async (req,res) => {
 
     try {
         // User find by id - (id from request, object to update from request body, options - new shows the new updated user and run validators runs User fields validation)
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
+        // const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
+        // Unused because hash password validation doesnt run in findByIdAndUpdate
+        
+        // Find User by id
+        const user = await User.findById(req.params.id)
+
+        // For each key in updates list, set new values
+        updates.forEach((update) => {user[update] = req.body[update]})
+
+        // Save modifications - trigger hash password validation as well
+        await user.save()
         
         if(!user) {
             return res.status(404).send() // 404 - Not Found, Send User not found

@@ -78,7 +78,7 @@ router.patch('/tasks/:id', async (req,res) => {
         res.send(task) // 200 - OK (pattern), Task updated
 
     } catch (error) {
-        res.status(400).send(error) // 400 - Bad Request, Invalid Update
+        res.status(500).send() // 500 - Internal Server Error,
     }
 })
 
