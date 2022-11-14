@@ -1,0 +1,49 @@
+<header>
+    {{!-- <nav class="navbar sticky-top d-flex navbar-expand-xxl navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">{{ title }}</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+        <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav">
+                <li class="list-group-item">
+                    <a class="nav-link" href="/private">Main</a>
+                </li>
+                <li class="list-group-item">
+                    <a class="nav-link" href="/createtask">Create Task</a>
+                </li>
+                <li class="list-group-item">
+                    <a class="nav-link" href="/viewtask">Tasks</a>
+                </li>
+            </ul>
+            <span>
+                <form method="POST" action="/users/logout" class="d-flex">
+                    <button class="btn btn-sm btn-danger" type="submit">Log Out</button>
+                </form>
+            </span>
+        </div>
+    </nav> --}}
+
+    <div class="collapse" id="navbarToggleExternalContent">
+        <div class="bg-dark p-4">
+            <h5 class="text-white h4">{{title}}</h5>
+            <br>
+            <ul class="list-inline">
+                <a type="button" class="btn btn-outline-light" href="/private">Main</a>
+                <a type="button" class="btn btn-outline-light" href="/createtask">Create Task</a>
+                <a type="button" class="btn btn-outline-light" href="/viewtask">Tasks</a>
+            </ul>
+        </div>
+    </div>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+                <form method="POST" action="/users/logout">
+                    <button type="submit" class="btn btn-danger">Log Out</a>
+                </form>
+            </button>
+        </div>
+    </nav>
+</header>
+

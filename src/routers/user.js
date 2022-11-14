@@ -2,6 +2,8 @@
 const express = require('express') // Define Router
 const multer = require('multer') // Upload files via App Endpoints
 const sharp = require('sharp')// Convert large images to smaller
+const path = require('path') // Nodejs built-in lib, enables to work with dirs
+const bodyParser = require('body-parser')
 
 // Import User model
 const User = require('../models/user')
@@ -12,13 +14,19 @@ const { sendWelcomeEmail, sendFarewellEmail } = require('../emails/account')
 // Import middlewares
 const auth = require('../middlewares/auth')
 
+// Create app json parser
+const jsonParser = bodyParser.json()
+// Create application/x-www-form-urlencoded parser
+var urlencodedParser = bodyParser.urlencoded({ extended: false })
+
 // Create new router variable - using express Router
 const router = new express.Router()
 
 // Users Endpoints
 
 // Create Users Endpoint
-router.post('/users', async (req,res) => {
+router.post('/users', jsonParser, async (req,res) => {
+    console.log(req.body)
     // Define user object as User model
     const user = new User(req.body)
 
@@ -26,10 +34,21 @@ router.post('/users', async (req,res) => {
     try {
         await user.save()
         sendWelcomeEmail(user.email, user.name) // Send Welcome Email
-        const token = await user.genToken()
-        res.status(201).send({ user, token }) // 201 - Created, send task created object
+        const token = await user.genToken() // Generate User token
+        res.cookie('token', token) // Send token via cookie data
+        // res.sendFile(path.resolve(__dirname, '..', 'templates',  'views', 'private.html'))
+        res.render('private', { 
+            user,
+            title: 'Main' 
+        })
+        // res.status(201).send({ user, token }) // 201 - Created, send task created object
     } catch (error) {
-        res.status(400).send(error) // 400 - Bad Request, send error
+        res.status(400).render('register', { // send an object with essencial information
+            title: 'Register',
+            name: 'joaohb07',
+            display: 'display:block;',
+            error
+        }) // 400 - Bad Request, send error
     }
 })
 
@@ -139,16 +158,29 @@ router.delete('/users/me', auth, async (req, res) => {
 })
 
 // User Login Endpoint
-router.post('/users/login', async (req, res) => {
+router.post('/users/login', urlencodedParser, async (req, res) => {
     try {
         // Calls user statics findByCredentials to authenticate the user
         const user = await User.findByCredentials(req.body.email, req.body.password)
         // Generate user token when it returns the user object
         const token = await user.genToken()
-
-        res.send({ user, token }) // 200 - OK, Send back user data and current authentication token
+        // Send token as cookie data in response
+        res.cookie('token', token) // Send token via cookie data
+        // Send private html access file, stored in views folder
+        // res.sendFile(path.resolve(__dirname, '..', 'templates', 'views', 'private.html'))
+        res.render('private', { 
+            user,
+            token,
+            title: 'Main' 
+        })
+        // res.send({ user, token }) // 200 - OK, Send back user data and current authentication token
     } catch (error) {
-        res.status(400).send() // 400 - Bad Request, Cannot Authenticate User
+        res.status(400).render('index', { // send an object with essencial information
+            title: 'Stack App',
+            name: 'joaohb07',
+            display: 'display:block;',
+            error
+        }) // 400 - Bad Request, Cannot Authenticate User
     }
 })
 
@@ -164,7 +196,12 @@ router.post('/users/logout', auth, async (req, res) => {
         // Save user after the operation
         await req.user.save()
 
-        res.send() // 200 - OK, Successfuly log out
+        res.render('index', { // send an object with essencial information
+            title: 'Task App',
+            message: 'Successfully Logged Out,' + req.user.name,
+            name: 'joaohb07',
+            display: 'display:none;'
+        }) // 200 - OK, Successfuly log out
     } catch (error) {
         res.status(500).send() // 500 - Internal Server Error, Impossible to LogOut
     }
@@ -248,7 +285,6 @@ router.get('/users/:id/avatar', auth, async (req, res) => {
         res.status(404).send() // 404 - Not Found, Image Not Found
     }
 })
-
 
 // Exports router routes
 module.exports = router

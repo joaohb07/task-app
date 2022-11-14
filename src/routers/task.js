@@ -24,9 +24,19 @@ router.post('/tasks', auth, async (req, res) => {
     // Save in MongoDB
     try {
         await task.save()
-        res.status(201).send(task) // 201 - Created, send task created object
+        // res.status(201).send(task) // 201 - Created, send task created object
+        res.status(201).render('tasks', { 
+            user: req.user,
+            token: req.token,
+            title: 'View Tasks!' 
+        })
     } catch(error) {
-        res.status(400).send(error) // 400 - Bad Request, send error
+        // res.status(400).send(error) // 400 - Bad Request, send error
+        res.status(400).render('private', { 
+            user: req.user,
+            token: req.token,
+            title: error
+        })
     }
 })
 
