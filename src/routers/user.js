@@ -39,7 +39,7 @@ router.post('/users', jsonParser, async (req,res) => {
         // res.sendFile(path.resolve(__dirname, '..', 'templates',  'views', 'private.html'))
         res.render('private', { 
             user,
-            title: 'Main' 
+            title: 'Home' 
         })
         // res.status(201).send({ user, token }) // 201 - Created, send task created object
     } catch (error) {
@@ -171,7 +171,7 @@ router.post('/users/login', urlencodedParser, async (req, res) => {
         res.render('private', { 
             user,
             token,
-            title: 'Main' 
+            title: 'Home' 
         })
         // res.send({ user, token }) // 200 - OK, Send back user data and current authentication token
     } catch (error) {
@@ -216,7 +216,13 @@ router.post('/users/logoutAll', auth, async (req, res) => {
         // Save User after the operation
         await req.user.save()
 
-        res.send() // 200 - OK, Successfuly log out
+        // res.send() // 200 - OK, Successfuly log out
+        res.render('index', { // send an object with essencial information
+            title: 'Task App',
+            message: 'Successfully Logged Out from all sessions,' + req.user.name,
+            name: 'joaohb07',
+            display: 'display:none;'
+        })
     } catch (error) {
         res.status(500).send() // 500 - Internal Server Error, Impossible to LogOut from All User Sessions
     }
