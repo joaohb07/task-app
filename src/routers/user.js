@@ -252,9 +252,10 @@ const upload = multer({
 // Uses multer middleware single to upload the file set by 'avatar' key
 // Uses auth middleware
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
+    // crete a buffer variable for the img, opmtimized by sharp, returned buffer
     const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250 }).png().toBuffer()
     
-    req.user.avatar = buffer // binary data from file
+    req.user.avatar = buffer // binary data from user img file
 
     // Save user
     await req.user.save()
@@ -267,7 +268,7 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
 // Delete User avatar Endpoint
 // Uses auth middleware
 router.delete('/users/me/avatar', auth, async (req, res) => {
-    req.user.avatar = undefined // set as undefined
+    req.user.avatar = undefined // set user avatar as undefined
 
     // Save user
     await req.user.save()
@@ -279,13 +280,17 @@ router.delete('/users/me/avatar', auth, async (req, res) => {
 // Uses auth middleware
 router.get('/users/:id/avatar', auth, async (req, res) => {
     try {
+        // Finds user by id
         const user = await User.findById(req.params.id)
 
+        // if user or user avatar doesn't exits
         if(!user || !user.avatar){
             throw new Error('User or User avatar not found')
         }
 
+        // Set content type of response as image/png, pre opmtimized by sharp
         res.set('Content-Type', 'image/png')
+        // Sends user avatar
         res.send(user.avatar)
     } catch (error) {
         res.status(404).send() // 404 - Not Found, Image Not Found
