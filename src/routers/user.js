@@ -235,22 +235,21 @@ router.delete('/users/me/avatar', auth, async (req, res) => {
 
 // Get User avatar Endpoint
 // Uses auth middleware
-router.get('/users/:id/avatar', auth, async (req, res) => {
+router.get('/users/me/avatar', auth, async (req, res) => {
     try {
-        // Finds user by id
-        const user = await User.findById(req.params.id)
+        // Gets user avatar from authenticated user
+        const avatar = req.user.avatar
 
-        // if user or user avatar doesn't exits
-        if(!user || !user.avatar){
-            throw new Error('User or User avatar not found')
+        if(!avatar || avatar === ""){
+            return res.status(404).send() // 404 - Not Found, Image Not Found
         }
 
         // Set content type of response as image/png, pre opmtimized by sharp
         res.set('Content-Type', 'image/png')
         // Sends user avatar
-        res.send(user.avatar)
+        res.send(avatar)
     } catch (error) {
-        res.status(404).send() // 404 - Not Found, Image Not Found
+        res.status(500).send() // 404 - Internal Server Error, Impossible to fetch avatar
     }
 })
 

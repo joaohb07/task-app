@@ -104,4 +104,4 @@ dist
 .tern-port
 
 # Ignore .env file
-config/env.env
+env.env
