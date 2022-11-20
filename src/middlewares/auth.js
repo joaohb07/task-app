@@ -7,8 +7,8 @@ const User = require('../models/user')
 // Create middleware for authentication
 const auth = async (req, res, next) => {
     try {  
-        const token = req.header('Authorization').replace('Bearer ','') // Uses token passed by request header, removing 'Bearer ' initial string
-        
+        const token = req.cookies['token']// Uses token passed by request header, removing 'Bearer ' initial string || fetch it from cookies req.header('Authorization').replace('Bearer ','') 
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET) // Uses jwt verify method to decode the token and return the User id stored in it
 
         const user = await User.findOne({ _id: decoded._id, 'tokens.token': token }) // Find user by decoded id and that has the token
@@ -25,7 +25,12 @@ const auth = async (req, res, next) => {
         next()
         // console.log(token)
     } catch (error) {
-        res.status(401).send({ error: 'Please authenticate!' }) // 401 - Unauthorized, Sends back an error
+        res.status(401).render('index',{ 
+            error,
+            display: 'display:block;',
+            title: 'Stack App',
+            name: 'joaohb07', 
+        }) // 401 - Unauthorized, Sends back an error
     }
 }
 // Export middleware

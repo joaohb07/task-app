@@ -1,0 +1,56 @@
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">{{title}}</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/private">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/createtask">Create Task</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/viewtask">Tasks</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/userpage">User Details</a>
+                </li>
+            </ul>
+            <span class="navbar-text">
+                <button type="button" class="btn btn-outline-danger btn-sm text-white" data-bs-toggle="modal" data-bs-target="#logout">
+                    Log Out
+                </button>
+            </span>
+            </div>
+        </div>
+    </nav>
+
+</header>
+
+<!-- Vertically centered modal -->
+<div class="modal fade" id="logout" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Log Out?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Do you really wish to Logout? You can logout from only this session or logout from all your current sessions</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary text-white" data-bs-dismiss="modal" aria-label="Close">Dismiss</button>
+        <form method="POST" action="/users/logout">
+            <button type="submit" class="btn btn-outline-danger text-white">LogOut</a>
+        </form>
+        <form method="POST" action="/users/logoutAll">
+            <button type="submit" class="btn btn-outline-danger text-white">LogOut All</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

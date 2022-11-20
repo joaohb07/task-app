@@ -6,6 +6,7 @@ const Task = require('../models/task')
 
 // Import Middlewares
 const auth = require('../middlewares/auth')
+const paginate = require('../middlewares/paginate')
 
 // Create new router variable - using express Router
 const router = new express.Router()
@@ -24,9 +25,21 @@ router.post('/tasks', auth, async (req, res) => {
     // Save in MongoDB
     try {
         await task.save()
-        res.status(201).send(task) // 201 - Created, send task created object
+        // res.status(201).send(task) // 201 - Created, send task created object
+        res.status(201).render('createtask', { 
+            user: req.user,
+            title: 'View Tasks',
+            task,
+            action: 'Created',
+            display: "display: block;" 
+        })
     } catch(error) {
-        res.status(400).send(error) // 400 - Bad Request, send error
+        // res.status(400).send(error) // 400 - Bad Request, send error
+        res.status(400).render('private', { 
+            user: req.user,
+            token: req.token,
+            title: error
+        })
     }
 })
 
@@ -52,18 +65,34 @@ router.get('/tasks', auth, async (req,res) => {
        const parts = req.query.sortBy.split(':') // divide value, orde
        sort[parts[0]] = parts[1] === 'desc' ? -1 : 1// first part - value, second part - order
     }
+    const limit = 4
+    var count = 0
+    var pages = [1]
 
 
     try {
-        
         // Find tasks by match
+
+        const tasks = await Task.find(match)
+
+        for(task in tasks) {
+            count++
+            if (count % 4 == 0){
+                pages.push(pages.length + 1)
+            }
+        }
+
+        // console.log(pages)
+
+        var skip = (req.query.page - 1) * limit
+        // console.log(pages)
         // Set project parameter to null
-        const tasks = await Task.find(match, null, { // find options
-            skip: parseInt(req.query.skip), // skip (for pagination), only if set as query param in the request
-            limit: parseInt(req.query.limit), // limit (for pagination), only if set as query param in the request
+        const tasks_selected = await Task.find(match, null, { // find options
+            skip: skip, // skip (for pagination), only if set as query param in the request
+            limit: limit, // limit (for pagination), only if set as query param in the request
             sort
         }) // match object to find specified data
-        
+
         // Another solution would be
         // await req.user.populate({
         //     path: 'tasks', // where tasks retrieved will be stored
@@ -71,8 +100,14 @@ router.get('/tasks', auth, async (req,res) => {
         //     strictPopulate: false
         // }).execPopulate()
         // This would fill user with its tasks matched by author(user) id
-
-        res.send(tasks) // 200 - OK (pattern), Send retrieved Tasks Object
+        res.render('tasks',{
+            user: req.user,
+            title: 'View Tasks',
+            display: 'display: none;', 
+            tasks: tasks_selected,
+            pages,
+            completed: match.completed
+        }) // 200 - OK (pattern), Send retrieved Tasks Object
     } catch(error) {
         res.status(500).send(error) // 500 - Internal Server Error, Send Service Down
     }
@@ -132,7 +167,13 @@ router.patch('/tasks/:id', auth, async (req,res) => {
         // Save task
         await task.save()
 
-        res.send(task) // 200 - OK (pattern), Task updated
+        res.render('tasks', { 
+            user: req.user,
+            title: 'View Tasks',
+            task,
+            action: 'Updated',
+            display: "display: block;" 
+        }) // 200 - OK (pattern), Task updated
 
     } catch (error) {
         res.status(500).send() // 500 - Internal Server Error,
@@ -153,7 +194,16 @@ router.delete('/tasks/:id', auth, async (req, res) => {
             return res.status(404).send() // 404 - Not Found, Send Task not found
         }
 
-        res.send(task) // 200 - OK (pattern), Task deleted
+        // res.send(task) // 200 - OK (pattern), Task deleted
+
+        res.render('tasks', { 
+            user: req.user,
+            title: 'View Tasks',
+            task,
+            action: 'Deleted',
+            display: "display: block;" 
+        })
+
     } catch (error) {
         res.status(500).send(error) // 500 - Internal Server Error, Send Service Down
     }

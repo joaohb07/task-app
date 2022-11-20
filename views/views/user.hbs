@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+
+    <link rel="stylesheet" type="text/css" href="../../css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  </head>
+  <body>
+
+
+    <div class="main-content">
+      {{>headermain}}
+      <div class="container container-md d-flex flex-column align-items-center justify-content-center">
+        <div class="card border-primary text-dark mb-3" style="max-width: 33rem;">
+            <div class="card-body bg-dark text-white">
+                <h5 class="card-title">{{title}}</h5>
+                <hr>
+                <div class="row g-2 justify-content-center">
+                  <div class="col-4 col-sm-3 col-md-3 col-lg-3 col-xl-3 col-xxl-3">
+                    <img src="/users/me/avatar" class="rounded img-thumbnail border-primary d-block" onerror="this.onerror=null;this.src='../../img/user.gif';"  alt="user image">
+                  </div>
+                  <div class="col-8 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-xxl-9" style="padding-top: 1%;">
+                    <form action="/users/me/avatar" enctype="multipart/form-data" method="POST">
+                      <div class="mb-3">
+                        <h6 class="text-muted">{{user.name}}'s avatar</h6>
+                        <div class="input-group">
+                          <input type="file" name="avatar" class="form-control form-control-sm">
+                          <button class="btn btn-sm btn-outline-primary text-white" type="submit">Upload</button>
+                        </div>
+                      </div>
+                    </form>
+                    <form action="/users/me/avatar?_method=DELETE" method="POST">
+                      <div class="mb-3">
+                        <div class="d-grid gap-1">
+                          <button class="btn btn-sm btn-outline-danger text-white" type="submit">Delete</button>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                <hr>
+                <h6 class="text-muted">{{user.name}}'s information</h6>
+                <form action="/users/me?_method=PATCH" method="POST">
+                    <div class="row g-2">
+                      <div class=" col-12">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" id="email" value={{user.email}}>
+                      </div>
+                      <div class=" col-12">
+                          <label for="password" class="form-label">Password</label>
+                          <input type="password" class="form-control" name="password" id="password" required>
+                          <div id="passwordHelp" class="form-text">You must type your password to alter user profile, or go ahead and create a new one.</div>
+                      </div>
+                      <div class=" col-9">
+                          <label for="name" class="form-label">Name</label>
+                          <input type="name" class="form-control" name="name" id="name" value="{{user.name}}" required>
+                      </div>
+                      <div class=" col-3">
+                          <label for="age" class="form-label">Age</label>
+                          <input type="text" class="form-control" id="age" name="age" value={{user.age}}>
+                      </div>
+                      <div class="col-12">
+                          <div class="d-grid gap-2">
+                              <button type="submit" class="btn btn-outline-primary text-white">Edit User</button>
+                          </div>
+                      </div>
+                      <div class="col-12">
+                          <div class="d-grid gap-2">
+                              <button type="button" class="btn btn-outline-danger text-white" data-bs-toggle="modal" data-bs-target="#deleteUser">Delete User</button>
+                          </div>
+                      </div>
+                    </div>
+                </form>
+                
+
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="deleteUser" tabindex="-1" aria-labelledby="deleteUserLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white">
+              <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserLabel">Delete User?</h5>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Do you really wish to delete your User? Your tasks will be gone forever!</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary text-white" data-bs-dismiss="modal">No</button>
+                <form action="/users/me?_method=DELETE" method="POST">
+                  <button type="submit" class="btn btn-outline-danger text-white">Delete User</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+         {{!-- Delete User Modal --}}
+
+        {{!-- <div class="modal-fade" id="deleteUser" tabindex="-1" aria-labelledby="deleteUser" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Delete User?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Do you really wish to delete your User? Your tasks will be gone forever.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Take me Back</button>
+                <button type="button" class="btn btn-primary">Delete my User</button>
+              </div>
+            </div>
+          </div>
+        </div> --}}
+
+      </div>
+
+
+    <script src="/js/client.js" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+  </body>
+</html>
