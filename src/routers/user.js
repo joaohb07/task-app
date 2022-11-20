@@ -269,7 +269,7 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
             title: 'User Details' 
         })
     }
-
+    
     // crete a buffer variable for the img, opmtimized by sharp, returned buffer
     const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250 }).png().toBuffer()
     
