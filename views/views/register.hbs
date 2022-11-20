@@ -14,8 +14,8 @@
       {{>header}}
       <div class="container container-md d-flex flex-column align-items-center justify-content-center">
 
-        <div class="card border-primary text-dark mb-3" style="max-width: 25rem;">
-          <div class="card-body text-dark">
+        <div class="card border-primary bg-dark text-white mb-3" style="max-width: 25rem;">
+          <div class="card-body text-white">
             <h5 class="card-title">{{title}}</h5>
             <div class="alert alert-danger" role="alert" style={{display}}>
               <h6 class="alert-heading">Validation Error!</h6>
@@ -23,21 +23,30 @@
               <p>Please, try again!</p>
               {{error}}
             </div>
+            <hr>
             <form method="POST" action="/users">
-              <div class="mb-3">
+              <div class=" mb-3">
                 <label for="name">Name</label>
-                <input type="text" class="form-control" name="name" id="name" required/>
+                <input type="text" class="form-control" name="name" id="name" placeholder="" required/>
               </div>
-              <div class="mb-3">
+              <div class=" mb-3">
                 <label for="email">Email</label>
-                <input type="text" class="form-control" name="email" id="email" required/>
+                <input type="text" class="form-control" name="email" id="email" placeholder="" required/>
                 <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
               </div>
-              <div class="mb-3">
+              <div class=" mb-3">
                 <label for="password">Password</label>
-                <input type="text" class="form-control" name="password" id="password" required/>
+                <input type="text" class="form-control" name="password" id="password" placeholder="" required/>
+                <div id="passwordHelp" class="form-text">Your password must be 7 characters minimum length.</div>
               </div>
-              <button type="submit" class="btn btn-outline-primary">Register</button>
+              <div class=" mb-3">
+                <label for="age">Age</label>
+                <input type="text" class="form-control" name="age" id="age" placeholder=""/>
+                <div id="passwordHelp" class="form-text">It's optional.</div>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-outline-primary text-white">Register</button>
+              </div>
             </form>
           </div>
         </div>

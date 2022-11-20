@@ -49,7 +49,8 @@ router.get('/createtask', auth, async (req, res) => {
     try {
         res.render('createtask', { 
             user: req.user,
-            title: 'Create Task' 
+            title: 'Create Task',
+            display: 'display: none;'  
         })
     } catch (error) {
         res.status(404).send() // 404 - Not Found
@@ -61,7 +62,8 @@ router.get('/viewtask', auth, async (req, res) => {
     try {
         res.render('tasks', { 
             user: req.user,
-            title: 'View Tasks' 
+            title: 'View Tasks',
+            display: 'display: none;'  
         })
     } catch (error) {
         res.status(404).send() // 404 - Not Found

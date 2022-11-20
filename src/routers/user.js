@@ -127,7 +127,11 @@ router.patch('/users/me', auth, async (req,res) => {
         //     return res.status(404).send() // 404 - Not Found, Send User not found
         // }
 
-        res.send(req.user) // 200 - OK (pattern), User updated
+        // res.send(req.user) // 200 - OK (pattern), User updated
+        res.render('user', { 
+            user: req.user,
+            title: 'User Details' 
+        }) 
 
     } catch (error) {
         res.status(500).send(error) // 400 - Internal Server Error, Invalid Update
@@ -151,7 +155,12 @@ router.delete('/users/me', auth, async (req, res) => {
 
         sendFarewellEmail(req.user.email, req.user.name) // Send Farewell email
 
-        res.send(req.user) // 200 - OK (pattern), User deleted
+        res.render('index', { // send an object with essencial information
+            title: 'Stack App',
+            message: 'Successfully Deleted, Good Bye ' + req.user.name + '!',
+            name: 'joaohb07',
+            display: 'display:none;'
+        }) // 200 - OK (pattern), User deleted
     } catch (error) {
         res.status(500).send(error) // 500 - Internal Server Error, Send Service Down
     }
@@ -252,6 +261,15 @@ const upload = multer({
 // Uses multer middleware single to upload the file set by 'avatar' key
 // Uses auth middleware
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
+
+    // Verifying if file exists
+    if (!req.file) {
+        return res.status(400).render('user', { 
+            user: req.user,
+            title: 'User Details' 
+        })
+    }
+
     // crete a buffer variable for the img, opmtimized by sharp, returned buffer
     const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250 }).png().toBuffer()
     
@@ -260,7 +278,10 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
     // Save user
     await req.user.save()
 
-    res.send() // 200 - OK (pattern), Image Uploaded
+    res.render('user', { 
+        user: req.user,
+        title: 'User Details' 
+    }) // 200 - OK (pattern), Image Uploaded
 }, (error, req, res, next) => { // Handle Express error
     res.status(400).send({error: error.message}) // 400 - Bad Request, File Rejected
 })
@@ -273,7 +294,10 @@ router.delete('/users/me/avatar', auth, async (req, res) => {
     // Save user
     await req.user.save()
 
-    res.send() // 200 - OK (pattern), Image deleted
+    res.render('user', { 
+        user: req.user,
+        title: 'User Details' 
+    }) // 200 - OK (pattern), Image deleted
 })
 
 // Get User avatar Endpoint

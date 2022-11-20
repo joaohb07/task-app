@@ -16,16 +16,19 @@
       {{>headermain}}
       <div class="container container-md d-flex flex-column align-items-center justify-content-center">
 
-        <div class="card border-primary text-dark mb-3" style="min-width: 25rem;">
-          <div class="card-body text-dark">
+        {{!-- <div class="card-group" style="max-width: 25rem;"> --}}
+        <div class="card border-primary bg-dark text-white mb-3">
+          <img src="/users/me/avatar" class="card-img-top" onerror="this.onerror=null;this.src='../../img/home.gif';">
+          <div class="card-body text-white">
             <h5 class="card-title">Welcome, {{ user.name }}!</h5>
             <p class="text-muted">This is your email:  {{ user.email }}</p>
             <div class="d-grid gap-2">
-              <a class="btn btn-outline-primary" href="/createtask">Create a Task</a>
-              <a class="btn btn-outline-success" href="/viewtask">Check your Tasks</a>
+              <a class="btn btn-outline-primary text-white" href="/createtask">Create a Task</a>
+              <a class="btn btn-outline-success text-white" href="/viewtask">Check your Tasks</a>
             </div>
           </div>
         </div>
+        {{!-- </div> --}}
 
       </div>
 

@@ -36,6 +36,11 @@ app.set('views', viewsPath)
 
 // hbs method to register a partials dir
 hbs.registerPartials(partialsPath)
+// Register hbs helper to deal with timestamps received from db
+hbs.registerHelper("prettifyDate", function(timestamp) {
+    const date = timestamp.toString().substring(0,21)
+    return date
+});
 
 app.use(express.static(publicFolder))
 console.log(publicFolder)

@@ -16,9 +16,14 @@
       {{>headermain}}
       <div class="container container-md d-flex flex-column align-items-center justify-content-center">
 
-        <div class="card border-primary text-dark mb-3" style="min-width: 25rem;">
-          <div class="card-body text-dark">
-            <h5 class="card-title">{{title}}!</h5>
+        <div class="card border-primary bg-dark text-white mb-3" style="max-width: 25rem;min-width: 20rem;">
+          <div class="card-body text-white">
+            <h5 class="card-title">{{title}}</h5>
+            <div class="alert alert-light alert-dismissible fade show" role="alert" style="{{display}}">
+              Task <strong>{{task.description}}</strong> {{action}}! Completed: <strong>{{task.completed}}</strong>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <hr>
             <form method="POST" action="/tasks">
               <div class="mb-3">
                 <label for="description">Task Description</label>
@@ -29,7 +34,9 @@
                 <label for="completed">Completed</label>
                 <input class="form-check-input" type="checkbox" value="true" name="completed" id="completed"/>
               </div>
-              <button type="submit" class="btn btn-outline-primary">Create Task</button>
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-outline-primary text-white">Create Task</button>
+              </div>
             </form>
           </div>
         </div>

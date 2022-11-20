@@ -16,11 +16,15 @@
       {{>headermain}}
       <div class="container container-md d-flex flex-column align-items-center justify-content-center">
 
-        <div class="card border-primary text-dark mb-3" style="min-width: 30rem;">
-          <div class="card-body text-dark">
-            <h5 class="card-title">{{title}}!</h5>
+        <div class="card border-primary bg-dark text-white mb-3" style="max-width: 38rem; min-width:22.75;">
+          <div class="card-body bg-dark text-white">
+            <h5 class="card-title">{{title}}</h5>
+            <div class="alert alert-light alert-dismissible fade show" role="alert" style="{{display}}">
+              Task <strong>{{task.description}}</strong> {{action}}!
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
             <hr>
-            <form id="getTasks">
+            <form action="/tasks?limit=2" method="GET" id="getTasks">
                 <div class="row g-3">
                     <div class="col">
                         <h6>Sort By Completed</h6>
@@ -40,13 +44,50 @@
                             <label for="skip">Skip</label>
                             <input class="form-check-input" type="checkbox" value="1" name="skip" id="skip"/>
                         </div> --}}
-                        <button type="submit" class="btn btn-sm btn-outline-success">Search Tasks</button>
+                        <button type="submit" class="btn btn-sm btn-outline-success text-white">Search Tasks</button>
                     </div>
                 </div>
             </form>
             <hr>
             <div id="ul" class="list-group">
-                
+                <div class="row g-3">
+                  {{#each tasks}}
+                    <div class="col-12 col-sm-6 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
+                      <div class="list-group-item">
+                        <form action="/tasks/{{this._id}}?_method=PATCH" method="POST">
+                          <div class="mb-3">
+                            <small class="text-muted"><b>Description</b></small>
+                            <input type="text" class="form-control" value="{{this.description}}" name="description" id="description" required/>
+                          </div>
+                          <div class="mb-3 form-check form-check-inline form-switch">
+                              <label for="completed"><small class="text-muted"><b>Completed</b></small></label>
+                              <input id="checkbox" onclick="checkValue()" class="form-check-input" type="checkbox" name="completed" {{#if this.completed}} checked {{/if}}/>
+                          </div>
+                          <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-sm btn-outline-success">Update Task</button>
+                          </div>
+                        </form>
+                        <form action="/tasks/{{this._id}}?_method=DELETE" method="POST">
+                          <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete Task</button>
+                          </div>
+                        </form>
+                        <small>{{prettifyDate this.updatedAt}}</small>
+                      </div>
+                    </div>
+                  {{/each}}
+                  <nav class="bg-dark" aria-label="Page navigation example">
+                    <ul class="pagination justify-content-center">
+                        {{#each pages}}
+                        <li class="page-item">
+                          <a class="btn btn-outline-light" href="/tasks?page={{this}}&completed={{../completed}}">
+                            {{this}}
+                          </a>
+                        </li>
+                        {{/each}}
+                    </ul>
+                  </nav>
+                </div>
             </div>
           </div>
         </div>
