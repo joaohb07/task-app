@@ -19,3 +19,12 @@ header nav{
 .main-content {
     flex-grow: 1;
 }
+
+#notCompleted:checked {
+    background-color: #dc3545!important;
+}
+
+#label {
+    font-size: small;
+    font-weight: bold;
+}

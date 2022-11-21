@@ -140,11 +140,14 @@ router.patch('/tasks/:id', auth, async (req,res) => {
     // store request object keys(fields) as an Array of strings
     const updates = Object.keys(req.body)
 
+    console.log("Body " + Object.values(req.body))
+
     // Define allowed Updates Array
     const allowedUpdates = ['description', 'completed']
 
     // is valid operation - return boolean, check if request object key(s) are in allowed updates list (Array)
     const isValidOperation = updates.every((update) => {return allowedUpdates.includes(update)})
+    // console.log("Is valid " + isValidOperation)
 
     // if valid operation is false
     if(!isValidOperation) {
@@ -157,18 +160,22 @@ router.patch('/tasks/:id', auth, async (req,res) => {
 
         const task = await Task.findOne({ _id: req.params.id, author: req.user._id })
         
+        // console.log("TAsk object " + task)
+
         if(!task) {
             return res.status(404).send() // 404 - Not Found, Send User not found
         }
 
         // Spdate value(s) for each task in task Object
         updates.forEach((update) => task[update] = req.body[update])
+        // console.log("Body again" + req.body)
 
         // Save task
         await task.save()
 
+        console.log("Tasks again " + task)
+
         res.render('tasks', { 
-            user: req.user,
             title: 'View Tasks',
             task,
             action: 'Updated',
@@ -176,7 +183,7 @@ router.patch('/tasks/:id', auth, async (req,res) => {
         }) // 200 - OK (pattern), Task updated
 
     } catch (error) {
-        res.status(500).send() // 500 - Internal Server Error,
+        res.status(500).send(error) // 500 - Internal Server Error,
     }
 })
 
