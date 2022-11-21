@@ -52,7 +52,7 @@
             <div id="ul" class="list-group">
                 <div class="row g-3">
                   {{#each tasks}}
-                    <div class="col-12 col-sm-6 col-md-6 col-lg-6 col-xl-6 col-xxl-6">
+                  <div {{#if ../tasks.[1]}} class="col-12 col-sm-6 col-md-6 col-lg-6 col-xl-6 col-xxl-6" {{else}} class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12" {{/if}}>
                       <div class="list-group-item">
                         <form action="/tasks/{{this._id}}?_method=PATCH" method="POST">
                           <div class="mb-3">
@@ -78,7 +78,7 @@
                         </form>
                         <small>{{prettifyDate this.updatedAt}}</small>
                       </div>
-                    </div>
+                  </div>
                   {{/each}}
                   <nav class="bg-dark" aria-label="Page navigation example">
                     <ul class="pagination justify-content-center">

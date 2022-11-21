@@ -41,6 +41,16 @@ hbs.registerHelper("prettifyDate", function(timestamp) {
     const date = timestamp.toString().substring(0,21)
     return date
 });
+// Register hbs helper to deal with array lenght of returned tasks array
+hbs.registerHelper("checkTasksArray", function(data) {
+    if (data.length == 1) {
+        var string = "class='col-12 col-sm-6 col-md-6 col-lg-6 col-xl-6 col-xxl-6'" 
+        return string
+    } else {
+        var string = "class='col-12 col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12'"
+        return string
+    }
+});
 
 app.use(express.static(publicFolder))
 console.log(publicFolder)
