@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Document</title>
-
+    <title>Task App</title>
+    <link rel="icon" href="/img/icon.png" type="image/gif" />
     <link rel="stylesheet" type="text/css" href="../../css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
   </head>
@@ -52,23 +52,27 @@
             <div id="ul" class="list-group">
                 <div class="row g-3">
                   {{#each tasks}}
-                    <div class="col-12 col-sm-6 col-md-12 col-lg-6 col-xl-6 col-xxl-6">
+                    <div class="col-12 col-sm-6 col-md-6 col-lg-6 col-xl-6 col-xxl-6">
                       <div class="list-group-item">
                         <form action="/tasks/{{this._id}}?_method=PATCH" method="POST">
                           <div class="mb-3">
                             <small class="text-muted"><b>Description</b></small>
                             <input type="text" class="form-control" value="{{this.description}}" name="description" id="description" required/>
                           </div>
-                          <div class="mb-3 form-check form-check-inline form-switch">
-                              <label for="completed"><small class="text-muted"><b>Completed</b></small></label>
-                              <input id="checkbox" onclick="checkValue()" class="form-check-input" type="checkbox" name="completed" {{#if this.completed}} checked {{/if}}/>
+                          <div class="mb-1 form-check form-check-inline form-switch">
+                              <label id="label" for="completed">Completed</label>
+                              <input class="form-check-input" type="radio" value="true" name="completed" {{#if this.completed}} checked {{/if}}/>
                           </div>
-                          <div class="d-grid gap-2">
+                          <div class="mb-1 form-check form-check-inline form-switch">
+                              <label id="label" for="completed">Not Completed</label>
+                              <input id="notCompleted" class="form-check-input" type="radio" value="false" name="completed" {{#if this.completed}} {{else}} checked {{/if}}/>
+                          </div>
+                          <div class=" d-grid gap-2">
                             <button type="submit" class="btn btn-sm btn-outline-success">Update Task</button>
                           </div>
                         </form>
                         <form action="/tasks/{{this._id}}?_method=DELETE" method="POST">
-                          <div class="d-grid gap-2">
+                          <div class=" d-grid gap-2" style="margin-top: 5px;">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete Task</button>
                           </div>
                         </form>
@@ -92,7 +96,8 @@
           </div>
         </div>
       </div>
-
+    </div>
+    {{>footer}}
 
     <script src="/js/client.js" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
