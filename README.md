@@ -1,13 +1,13 @@
 <p align="center">
     <img src="./public/img/icon.png" height="75">
-    <h1 align="center" style="font-family: monospace, monospace;"><b>Task App</b></h1>
+    <h1 align="center"><b>Task App</b></h1>
 </p>
 
 <p align="center">
   <a href="https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml">
     <img alt="Actions Workflow" src="https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml/badge.svg"/>
   </a>
-  <a>
+  <a href="https://botelho-web-task-app.herokuapp.com/">
     <img alt="Heroku" src="https://pyheroku-badge.herokuapp.com/?app=botelho-web-task-app&style=plastic" />
   </a>
 
@@ -15,11 +15,9 @@
 
 > A Task manager App using Node.js with mongoDB for database.
 
----
-
 ## Live Preview
 
-Check this [app](https://botelho-web-task-app.herokuapp.com/) live preview on heroku.
+Check this [***app***](https://botelho-web-task-app.herokuapp.com/) live preview on heroku.
 
 ## Technologies
 
