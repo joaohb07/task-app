@@ -1,8 +1,20 @@
+<center>
+
+![Rick looking for an user](./public/img/icon.png)
+
 # Task App
 
-> Task App Backend only.
+[![Deploy on Heroku](https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml/badge.svg)](https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml)
 
-A Task App using Node.js with mongoDB. This is the backend only documentation.
+![Heroku](https://pyheroku-badge.herokuapp.com/?app=botelho-web-task-app&style=plastic)
+
+</center>
+
+> A Task App using Node.js with mongoDB. This is the backend only documentation.
+
+## Live Preview
+
+Check this [app](https://botelho-web-task-app.herokuapp.com/) live preview on heroku.
 
 ## Technologies
 
