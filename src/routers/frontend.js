@@ -18,7 +18,7 @@ const router = new express.Router()
 // Define index route
 router.get('/', (req,res) => {
     res.render('index', { // send an object with essencial information
-        title: 'Stack App',
+        title: 'Task App',
         name: 'joaohb07',
         display: 'display:none;'
     }) // send an object with essencial information
