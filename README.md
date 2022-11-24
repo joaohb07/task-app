@@ -1,16 +1,21 @@
-<center>
+<p align="center">
+    <img src="./public/img/icon.png" height="75">
+    <h1 align="center" style="font-family: monospace, monospace;"><b>Task App</b></h1>
+</p>
 
-![Rick looking for an user](./public/img/icon.png)
+<p align="center">
+  <a href="https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml">
+    <img alt="Actions Workflow" src="https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml/badge.svg"/>
+  </a>
+  <a>
+    <img alt="Heroku" src="https://pyheroku-badge.herokuapp.com/?app=botelho-web-task-app&style=plastic" />
+  </a>
 
-# Task App
+</p>
 
-[![Deploy on Heroku](https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml/badge.svg)](https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml)
+> A Task manager App using Node.js with mongoDB for database.
 
-![Heroku](https://pyheroku-badge.herokuapp.com/?app=botelho-web-task-app&style=plastic)
-
-</center>
-
-> A Task App using Node.js with mongoDB. This is the backend only documentation.
+---
 
 ## Live Preview
 
