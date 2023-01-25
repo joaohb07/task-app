@@ -105,3 +105,6 @@ dist
 
 # Ignore .env file
 env.env
+
+# Ignore DS_Store files
+**/.DS_Store

@@ -4,12 +4,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml">
-    <img alt="Actions Workflow" src="https://github.com/joaohb07/task-app/actions/workflows/heroku-deploy.yml/badge.svg"/>
-  </a>
-  <a href="https://botelho-web-task-app.herokuapp.com/">
-    <img alt="Heroku" src="https://pyheroku-badge.herokuapp.com/?app=botelho-web-task-app&style=plastic" />
-  </a>
 
 </p>
 
@@ -17,6 +11,7 @@
 
 ## Live Preview
 
+[**DEPRECATED - Heroku Deployment**]
 Check this [***app***](https://botelho-web-task-app.herokuapp.com/) live preview on heroku.
 
 ## Technologies
@@ -28,7 +23,7 @@ Technologies I used to develop this App.
 |[***Node.js***](https://nodejs.org/)|App BackEnd.|
 |[***MongoDB***](https://www.mongodb.com/)|Local DataBase set.|
 |[***MongoDB Atlas***](https://www.mongodb.com/atlas/database)|Multicloud DataBase remote set, to link with Heroku deployment.|
-|[***Heroku***](heroku.com)|Deploy App.|
+|[***Heroku***](heroku.com)|Used in first versions.|
 |[***Express***](https://expressjs.com/)|Create Web Server.|
 |[***Mongoose***](https://mongoosejs.com/)|Execute DB Operations.|
 |[***sendgrid/mail for SendGrid API***](https://sendgrid.com/solutions/email-api/)|For sending emails to user (only sends when creating an user or deleting an user).|
