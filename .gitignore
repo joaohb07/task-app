@@ -108,3 +108,9 @@ env.env
 
 # Ignore DS_Store files
 **/.DS_Store
+
+# Local Netlify folder
+.netlify
+
+# vscode
+.vscode/
