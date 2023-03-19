@@ -11,8 +11,7 @@
 
 ## Live Preview
 
-[**DEPRECATED - Heroku Deployment**]
-Check this [***app***](https://botelho-web-task-app.herokuapp.com/) live preview on heroku.
+Check this [***app***](https://task-app-36a0.onrender.com) live preview on render.
 
 ## Technologies
 
@@ -22,8 +21,8 @@ Technologies I used to develop this App.
 |---|---|
 |[***Node.js***](https://nodejs.org/)|App BackEnd.|
 |[***MongoDB***](https://www.mongodb.com/)|Local DataBase set.|
-|[***MongoDB Atlas***](https://www.mongodb.com/atlas/database)|Multicloud DataBase remote set, to link with Heroku deployment.|
-|[***Heroku***](heroku.com)|Used in first versions.|
+|[***MongoDB Atlas***](https://www.mongodb.com/atlas/database)|Multicloud DataBase remote set, to link with Render deployment.|
+|[***Render***](render.com)|Used to deploy the app.|
 |[***Express***](https://expressjs.com/)|Create Web Server.|
 |[***Mongoose***](https://mongoosejs.com/)|Execute DB Operations.|
 |[***sendgrid/mail for SendGrid API***](https://sendgrid.com/solutions/email-api/)|For sending emails to user (only sends when creating an user or deleting an user).|
@@ -38,7 +37,7 @@ Technologies I used to develop this App.
 
 ## Documentation
 
-Check this app [documentation here](https://joaohb07.github.io/documentation/web/task_app/task_app/).
+Check this app [***documentation***](https://joaohb07.github.io/documentation/web/task_app/task_app/) for more technical details.
 
 ## Local Development
 
@@ -101,7 +100,7 @@ To run the app locally, follow these steps:
         npm run dev
         ```
 
-3. Check the [documentation](https://joaohb07.github.io/documentation/web/task_app/task_app_endpoints/) to know how to test API Endpoints with postman.
+3. Check the [***documentation***](https://joaohb07.github.io/documentation/web/task_app/task_app_endpoints/) to know how to test API Endpoints with postman.
 
 ## Contributing
 
