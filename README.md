@@ -4,7 +4,9 @@
 </p>
 
 <p align="center">
-
+  <a href="https://weather-app-ix73.onrender.com">
+    <img alt="Heroku" src="https://badgen.net/badge/icon/Live Preview?icon=terminal&label=Render&color=black" />
+  </a>
 </p>
 
 > A Task manager App using Node.js with mongoDB for database.
