@@ -58,8 +58,10 @@ jobs:
           command: npm run test:component
 
       - name: Run Cypress E2E Tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: client
-          install: false
-          command: npm run test:e2e
+        working-directory: ./client
+        env:
+          CYPRESS_baseUrl: 'http://127.0.0.1:5173'
+        run: |
+          npx vite preview --host 127.0.0.1 --port 5173 &
+          npx wait-on http://127.0.0.1:5173 --timeout 30000
+          npx cypress run --e2e
