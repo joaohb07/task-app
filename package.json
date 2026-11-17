@@ -7,18 +7,20 @@
     "start": "node src/index.js",
     "dev": "node --watch --env-file=.env src/index.js",
     "build": "npm install --prefix client && npm run build --prefix client",
-    "test": "jest --runInBand --coverage"
+    "test": "jest --coverage --runInBand",
+    "test:watch": "jest --watch --runInBand"
   },
   "jest": {
     "testEnvironment": "node",
     "clearMocks": true,
+    "testTimeout": 30000,
     "collectCoverageFrom": [
       "src/**/*.js",
-      "!src/index.js"
+      "!src/index.js",
+      "!src/db/mongoose.js"
     ]
   },
   "dependencies": {
-    "@sendgrid/mail": "^8.1.4",
     "bcryptjs": "^2.4.3",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "supertest": "^7.0.0"
+    "mongodb-memory-server": "^11.3.0",
+    "supertest": "^7.3.2"
   }
 }
