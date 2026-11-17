@@ -1,7 +1,8 @@
 const mongoose = require('mongoose')
 
-const connectionURL = process.env.MONGODB_URL_DB // 27017 is mongodb default port
-// const databaseName = '' // My db name
+const connectDB = async () => {
+    const connectionURL = process.env.MONGODB_URL_DB || 'mongodb://127.0.0.1:27017/task-manager-api'
+    await mongoose.connect(connectionURL)
+}
 
-mongoose.connect(connectionURL, {})
-
+module.exports = connectDB

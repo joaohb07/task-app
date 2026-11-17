@@ -1,32 +1,48 @@
-// Import libs
-const sgMail = require('@sendgrid/mail') // lib to manipulate SendGrid API to send emails
+const sgMail = require('@sendgrid/mail')
 
-// SendGrid API key
 const sendgridAPIKey = process.env.SEND_EMAIL_API_KEY
-// Setup SendGrid API key
-sgMail.setApiKey(sendgridAPIKey)
+const senderEmail = process.env.SEND_EMAIL_FROM || 'joao.botelho@unesp.br'
 
-// Send Welcome Email function
-const sendWelcomeEmail = (email, name) => {
-    sgMail.send({ // SendGrid send method, to send the email
-        to: email, // to user email
-        from: 'joao.botelho@unesp.br', // from my personal email
-        subject: 'Welcome to Task App', // email subject
-        text: `Welcome to the app, ${name}! Hope you enjoy it!` // email body
-    })
+if (sendgridAPIKey) {
+    sgMail.setApiKey(sendgridAPIKey)
 }
 
-// Send Farewell Email function
-const sendFarewellEmail = (email, name) => {
-    sgMail.send({ // SendGrid send method, to send the email
-        to: email, // to user email
-        from: 'joao.botelho@unesp.br', // from my personal email
-        subject: 'Succefully Cancelled Task App Subscription', // email subject
-        text: `Farewell ${name}! Hope to see you again!` // email body
-    })
+/**
+ * Sends a welcome email if SendGrid is configured in the environment.
+ */
+const sendWelcomeEmail = async (email, name) => {
+    if (!sendgridAPIKey) return
+
+    try {
+        await sgMail.send({
+            to: email,
+            from: senderEmail,
+            subject: 'Welcome to Task App',
+            text: `Welcome to the app, ${name}! Hope you enjoy it!`
+        })
+    } catch (error) {
+        console.warn('Warning: Could not send welcome email:', error.message)
+    }
 }
 
-// Export Email send
+/**
+ * Sends a farewell email upon account deletion if SendGrid is configured.
+ */
+const sendFarewellEmail = async (email, name) => {
+    if (!sendgridAPIKey) return
+
+    try {
+        await sgMail.send({
+            to: email,
+            from: senderEmail,
+            subject: 'Successfully Cancelled Task App Subscription',
+            text: `Farewell ${name}! Hope to see you again!`
+        })
+    } catch (error) {
+        console.warn('Warning: Could not send farewell email:', error.message)
+    }
+}
+
 module.exports = {
     sendWelcomeEmail,
     sendFarewellEmail
