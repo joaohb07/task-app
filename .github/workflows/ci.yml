@@ -1,0 +1,67 @@
+name: CI - Tests & Build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Backend Unit & Integration Tests (Jest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Run Jest test suite
+        run: npm test
+
+  frontend-tests:
+    name: Frontend Build & Cypress Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Verify production build (Vite)
+        working-directory: ./client
+        run: npm run build
+
+      - name: Run Cypress Component Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: client
+          install: false
+          command: npm run test:component
+
+      - name: Run Cypress E2E Tests
+        working-directory: ./client
+        env:
+          CYPRESS_baseUrl: 'http://127.0.0.1:5173'
+        run: |
+          npx vite preview --host 127.0.0.1 --port 5173 &
+          npx wait-on http://127.0.0.1:5173 --timeout 30000
+          npx cypress run --e2e

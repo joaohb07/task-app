@@ -1,32 +1,78 @@
-// Import libs
-const sgMail = require('@sendgrid/mail') // lib to manipulate SendGrid API to send emails
+const nodemailer = require('nodemailer')
 
-// SendGrid API key
-const sendgridAPIKey = process.env.SEND_EMAIL_API_KEY
-// Setup SendGrid API key
-sgMail.setApiKey(sendgridAPIKey)
+const getSenderEmail = () =>
+    process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@taskapp.local'
 
-// Send Welcome Email function
-const sendWelcomeEmail = (email, name) => {
-    sgMail.send({ // SendGrid send method, to send the email
-        to: email, // to user email
-        from: 'joao.botelho@unesp.br', // from my personal email
-        subject: 'Welcome to Task App', // email subject
-        text: `Welcome to the app, ${name}! Hope you enjoy it!` // email body
+/**
+ * Creates a configured Nodemailer transporter using environment SMTP credentials.
+ * Returns null if SMTP_HOST / SMTP_USER / SMTP_PASS are not configured.
+ */
+const createTransporter = () => {
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env
+
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+        return null
+    }
+
+    const port = Number(SMTP_PORT) || 587
+
+    return nodemailer.createTransport({
+        host: SMTP_HOST,
+        port,
+        secure: port === 465,
+        auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASS
+        }
     })
 }
 
-// Send Farewell Email function
-const sendFarewellEmail = (email, name) => {
-    sgMail.send({ // SendGrid send method, to send the email
-        to: email, // to user email
-        from: 'joao.botelho@unesp.br', // from my personal email
-        subject: 'Succefully Cancelled Task App Subscription', // email subject
-        text: `Farewell ${name}! Hope to see you again!` // email body
-    })
+/**
+ * Sends a welcome email when a new user registers.
+ * Silently skips if SMTP credentials are not configured.
+ *
+ * @param {string} email - Recipient email address.
+ * @param {string} name - Recipient display name.
+ */
+const sendWelcomeEmail = async (email, name) => {
+    const transporter = createTransporter()
+    if (!transporter) return
+
+    try {
+        await transporter.sendMail({
+            from: `"Task App" <${getSenderEmail()}>`,
+            to: email,
+            subject: 'Welcome to Task App',
+            text: `Welcome to the app, ${name}! Hope you enjoy it!`
+        })
+    } catch (error) {
+        console.warn('Warning: Could not send welcome email:', error.message)
+    }
 }
 
-// Export Email send
+/**
+ * Sends a farewell email upon user account deletion.
+ * Silently skips if SMTP credentials are not configured.
+ *
+ * @param {string} email - Recipient email address.
+ * @param {string} name - Recipient display name.
+ */
+const sendFarewellEmail = async (email, name) => {
+    const transporter = createTransporter()
+    if (!transporter) return
+
+    try {
+        await transporter.sendMail({
+            from: `"Task App" <${getSenderEmail()}>`,
+            to: email,
+            subject: 'Successfully Cancelled Task App Subscription',
+            text: `Farewell ${name}! Hope to see you again!`
+        })
+    } catch (error) {
+        console.warn('Warning: Could not send farewell email:', error.message)
+    }
+}
+
 module.exports = {
     sendWelcomeEmail,
     sendFarewellEmail

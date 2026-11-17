@@ -1,0 +1,28 @@
+{
+  "name": "client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:e2e": "cypress run --e2e",
+    "test:component": "cypress run --component",
+    "cy:open": "cypress open"
+  },
+  "dependencies": {
+    "@carbon/icons-vue": "^10.141.0",
+    "@carbon/styles": "^1.119.0",
+    "axios": "^1.21.1",
+    "pinia": "^4.1.0",
+    "vue": "^3.5.44",
+    "vue-router": "^4.6.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "cypress": "^16.3.0",
+    "sass": "^1.108.2",
+    "vite": "^8.3.6"
+  }
+}

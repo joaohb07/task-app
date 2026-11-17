@@ -1,218 +1,116 @@
-// Import libs
 const express = require('express')
-
-// Import Task model
 const Task = require('../models/task')
-
-// Import Middlewares
 const auth = require('../middlewares/auth')
-const paginate = require('../middlewares/paginate')
 
-// Create new router variable - using express Router
 const router = new express.Router()
 
-// Tasks Endpoints
-
-// Create Tasks Endpoint
-// Run middleware `auth` for authentication
+// Create task
 router.post('/tasks', auth, async (req, res) => {
-    // Define task object as Task model
     const task = new Task({
-        ...req.body, // copy body request to task object
-        author: req.user._id // With auth middleware, we can fecth user id of our authenticated user
+        ...req.body,
+        author: req.user._id
     })
 
-    // Save in MongoDB
     try {
         await task.save()
-        // res.status(201).send(task) // 201 - Created, send task created object
-        res.status(201).render('createtask', { 
-            user: req.user,
-            title: 'View Tasks',
-            task,
-            action: 'Created',
-            display: "display: block;" 
-        })
-    } catch(error) {
-        // res.status(400).send(error) // 400 - Bad Request, send error
-        res.status(400).render('private', { 
-            user: req.user,
-            token: req.token,
-            title: error
-        })
+        res.status(201).send(task)
+    } catch (error) {
+        res.status(400).send({ error: error.message || 'Unable to create task.' })
     }
 })
 
-// Find All Tasks Endpoint
-// Run middleware `auth` for authentication
-router.get('/tasks', auth, async (req,res) => {
-
-    // Create a new sort object for filtering data
+// List tasks with filtering, sorting, and pagination metadata
+// GET /api/tasks?completed=true&limit=10&skip=0&sortBy=createdAt:desc
+router.get('/tasks', auth, async (req, res) => {
+    const match = { author: req.user._id }
     const sort = {}
 
-    // Create a new match object for filtering data
-    const match = { // always will include author for validation
-        author: req.user._id // req.user provided by authentication
+    if (req.query.completed === 'true' || req.query.completed === 'false') {
+        match.completed = req.query.completed === 'true'
     }
 
-    // if the request receives completed as parameter add to match object
-    if (req.query.completed) { // url/tasks?completed=true || false
-        match.completed = req.query.completed === 'true' // Add completed passed to match object
+    if (req.query.sortBy) {
+        const parts = req.query.sortBy.split(':')
+        sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
+    } else {
+        sort.createdAt = -1
     }
 
-    // if the request receives sortBy as parameter add its value to sort object
-    if (req.query.sortBy) { // url/tasks?sortBy=completed||createdAt||updatedAt:desc(for descending order)||asc(for ascending order)
-       const parts = req.query.sortBy.split(':') // divide value, orde
-       sort[parts[0]] = parts[1] === 'desc' ? -1 : 1// first part - value, second part - order
-    }
-    const limit = 4
-    var count = 0
-    var pages = [1]
-
+    const limit = parseInt(req.query.limit, 10) || 10
+    const skip = parseInt(req.query.skip, 10) || 0
 
     try {
-        // Find tasks by match
+        const [tasks, total, completedCount] = await Promise.all([
+            Task.find(match, null, { limit, skip, sort }),
+            Task.countDocuments(match),
+            Task.countDocuments({ author: req.user._id, completed: true })
+        ])
 
-        const tasks = await Task.find(match)
+        const totalAll = await Task.countDocuments({ author: req.user._id })
 
-        for(task in tasks) {
-            count++
-            if (count % 4 == 0){
-                pages.push(pages.length + 1)
+        res.send({
+            tasks,
+            total,
+            stats: {
+                total: totalAll,
+                completed: completedCount,
+                pending: totalAll - completedCount
             }
-        }
-
-        // console.log(pages)
-
-        var skip = (req.query.page - 1) * limit
-        // console.log(pages)
-        // Set project parameter to null
-        const tasks_selected = await Task.find(match, null, { // find options
-            skip: skip, // skip (for pagination), only if set as query param in the request
-            limit: limit, // limit (for pagination), only if set as query param in the request
-            sort
-        }) // match object to find specified data
-
-        // Another solution would be
-        // await req.user.populate({
-        //     path: 'tasks', // where tasks retrieved will be stored
-        //     match,
-        //     strictPopulate: false
-        // }).execPopulate()
-        // This would fill user with its tasks matched by author(user) id
-        res.render('tasks',{
-            user: req.user,
-            title: 'View Tasks',
-            display: 'display: none;', 
-            tasks: tasks_selected,
-            pages,
-            completed: match.completed
-        }) // 200 - OK (pattern), Send retrieved Tasks Object
-    } catch(error) {
-        res.status(500).send(error) // 500 - Internal Server Error, Send Service Down
-    }
-})
-
-// Find Task by id Endpoint
-// Run middleware `auth` for authentication
-router.get('/tasks/:id', auth, async (req,res) => {
-    const _id = req.params.id
-
-    try {
-        // Await Task find by id 
-        // const task = await Task.findById(_id)
-
-        // Finds task by id and author (user) id
-        const task = await Task.findOne({_id, author: req.user._id})
-
-        if(!task){
-            return res.status(404).send({ task: "Not Found!" }) // 404 - Not Found, Send User not found
-        }
-        res.send(task) // 200 - OK (pattern), Send retrieved User Object
+        })
     } catch (error) {
-        res.status(500).send(error) // 500 - Internal Server Error, Send Service Down
+        res.status(500).send({ error: 'Unable to fetch tasks.' })
     }
 })
 
-// Update Task by id Endpoint
-// Run middleware `auth` for authentication
-router.patch('/tasks/:id', auth, async (req,res) => { 
-    // store request object keys(fields) as an Array of strings
-    const updates = Object.keys(req.body)
-
-    console.log("Body " + Object.values(req.body))
-
-    // Define allowed Updates Array
-    const allowedUpdates = ['description', 'completed']
-
-    // is valid operation - return boolean, check if request object key(s) are in allowed updates list (Array)
-    const isValidOperation = updates.every((update) => {return allowedUpdates.includes(update)})
-    // console.log("Is valid " + isValidOperation)
-
-    // if valid operation is false
-    if(!isValidOperation) {
-        return res.status(400).send({ error: "Invalid Task Update!" }) // 400 - Bad Request, Invalid Update
-    }
-
+// Get single task by ID
+router.get('/tasks/:id', auth, async (req, res) => {
     try {
-        // Task find by id - (id from request, object to update from request body, options - new: shows the new updated user ; runValidators: runs User fields validation)
-        // const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
-
         const task = await Task.findOne({ _id: req.params.id, author: req.user._id })
-        
-        // console.log("TAsk object " + task)
-
-        if(!task) {
-            return res.status(404).send() // 404 - Not Found, Send User not found
+        if (!task) {
+            return res.status(404).send({ error: 'Task not found.' })
         }
-
-        // Spdate value(s) for each task in task Object
-        updates.forEach((update) => task[update] = req.body[update])
-        // console.log("Body again" + req.body)
-
-        // Save task
-        await task.save()
-
-        console.log("Tasks again " + task)
-
-        res.render('tasks', { 
-            title: 'View Tasks',
-            task,
-            action: 'Updated',
-            display: "display: block;" 
-        }) // 200 - OK (pattern), Task updated
-
+        res.send(task)
     } catch (error) {
-        res.status(500).send(error) // 500 - Internal Server Error,
+        res.status(500).send({ error: 'Unable to fetch task.' })
     }
 })
 
-// Delete Task Endpoint
-// Run middleware `auth` for authentication
+// Update task by ID
+router.patch('/tasks/:id', auth, async (req, res) => {
+    const updates = Object.keys(req.body)
+    const allowedUpdates = ['description', 'completed']
+    const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
+
+    if (!isValidOperation) {
+        return res.status(400).send({ error: 'Invalid task updates!' })
+    }
+
+    try {
+        const task = await Task.findOne({ _id: req.params.id, author: req.user._id })
+        if (!task) {
+            return res.status(404).send({ error: 'Task not found.' })
+        }
+
+        updates.forEach((update) => {
+            task[update] = req.body[update]
+        })
+        await task.save()
+        res.send(task)
+    } catch (error) {
+        res.status(400).send({ error: error.message || 'Unable to update task.' })
+    }
+})
+
+// Delete task by ID
 router.delete('/tasks/:id', auth, async (req, res) => {
     try {
-        // Task find by id and remove
-        // const task = await Task.findByIdAndRemove(req.params.id)
-
-        // Find tasks by id and author's is and remove
-        const task = await Task.findOneAndDelete({ _id: req.params.id, author: req.user._id }) // with auth middleware we have access to the authenticated user id
-
-        if(!task){
-            return res.status(404).send() // 404 - Not Found, Send Task not found
+        const task = await Task.findOneAndDelete({ _id: req.params.id, author: req.user._id })
+        if (!task) {
+            return res.status(404).send({ error: 'Task not found.' })
         }
-
-        // res.send(task) // 200 - OK (pattern), Task deleted
-
-        res.render('tasks', { 
-            user: req.user,
-            title: 'View Tasks',
-            task,
-            action: 'Deleted',
-            display: "display: block;" 
-        })
-
+        res.send(task)
     } catch (error) {
-        res.status(500).send(error) // 500 - Internal Server Error, Send Service Down
+        res.status(500).send({ error: 'Unable to delete task.' })
     }
 })
 

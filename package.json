@@ -1,42 +1,38 @@
 {
-  "name": "stack-app",
-  "version": "1.0.0",
-  "description": "A Stack App using Node.js with mongodb.",
-  "main": "index.js",
+  "name": "task-app",
+  "version": "2.0.0",
+  "description": "Full Stack Task Manager API with Node.js, Express, MongoDB and Vue + Carbon Design System.",
+  "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "env-cmd -f ./env.env nodemon src/index.js -e js,hbs"
+    "dev": "node --watch --env-file=.env src/index.js",
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "test": "jest --coverage --runInBand",
+    "test:watch": "jest --watch --runInBand"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/joaohb07/Stack-app.git"
+  "jest": {
+    "testEnvironment": "node",
+    "clearMocks": true,
+    "testTimeout": 30000,
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js",
+      "!src/db/mongoose.js"
+    ]
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/joaohb07/Stack-app/issues"
-  },
-  "homepage": "https://github.com/joaohb07/Stack-app#readme",
   "dependencies": {
-    "@sendgrid/mail": "^7.7.0",
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.1",
-    "cookie-parser": "^1.4.6",
-    "dateformat": "^5.0.3",
-    "express": "^4.18.2",
-    "hbs": "^4.2.0",
-    "jsonwebtoken": "^8.5.1",
-    "method-override": "^3.0.0",
-    "mongodb": "^4.11.0",
-    "mongoose": "^6.7.2",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.0",
     "multer": "^1.4.5-lts.1",
-    "netlify-lambda": "^2.0.15",
-    "sharp": "^0.31.2",
-    "validator": "^13.7.0"
+    "nodemailer": "^10.6.0",
+    "sharp": "^0.35.5",
+    "validator": "^13.12.0"
   },
   "devDependencies": {
-    "env-cmd": "^10.1.0",
-    "nodemon": "^2.0.20"
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^11.3.0",
+    "supertest": "^7.3.2"
   }
 }

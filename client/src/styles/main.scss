@@ -1,0 +1,36 @@
+@use '@carbon/styles/scss/config' with (
+  $use-flexbox-grid: true,
+  $use-akamai-cdn: true
+);
+@use '@carbon/styles';
+@use '@carbon/styles/scss/themes';
+@use '@carbon/styles/scss/theme';
+
+:root {
+  @include theme.theme(themes.$g100);
+}
+
+[data-carbon-theme='g10'] {
+  @include theme.theme(themes.$g10);
+}
+
+html,
+body,
+#app {
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--cds-background);
+  color: var(--cds-text-primary);
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.app-shell {
+  padding-top: 3rem; // espaço para o Carbon UI Shell Header fixo (48px)
+  min-height: 100vh;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}

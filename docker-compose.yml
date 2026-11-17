@@ -1,0 +1,44 @@
+services:
+  task-mongo:
+    image: mongo:7
+    container_name: task-mongo
+    restart: unless-stopped
+    # ports:
+    #   - "27017:27017" # Uncomment to expose MongoDB directly without a reverse proxy
+    volumes:
+      - task_mongo_data:/data/db
+    networks:
+      - task-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  task-app:
+    build: .
+    container_name: task-app
+    restart: unless-stopped
+    depends_on:
+      task-mongo:
+        condition: service_healthy
+    # ports:
+    #   - "3000:3000" # Uncomment to expose the app directly without a reverse proxy
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URL_DB=mongodb://task-mongo:27017/task-manager-api
+    networks:
+      - task-net
+      - global-proxy
+
+volumes:
+  task_mongo_data:
+
+networks:
+  task-net:
+    driver: bridge
+  global-proxy:
+    external: true
