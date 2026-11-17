@@ -3,6 +3,8 @@ services:
     image: mongo:7
     container_name: task-mongo
     restart: unless-stopped
+    ports:
+      - "27017:27017"
     volumes:
       - task_mongo_data:/data/db
     networks:
@@ -20,6 +22,8 @@ services:
     depends_on:
       task-mongo:
         condition: service_healthy
+    ports:
+      - "3000:3000"
     env_file:
       - .env
     environment:
