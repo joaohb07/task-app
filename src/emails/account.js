@@ -1,22 +1,47 @@
-const sgMail = require('@sendgrid/mail')
+const nodemailer = require('nodemailer')
 
-const sendgridAPIKey = process.env.SEND_EMAIL_API_KEY
-const senderEmail = process.env.SEND_EMAIL_FROM || 'joao.botelho@unesp.br'
+const getSenderEmail = () =>
+    process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@taskapp.local'
 
-if (sendgridAPIKey) {
-    sgMail.setApiKey(sendgridAPIKey)
+/**
+ * Creates a configured Nodemailer transporter using environment SMTP credentials.
+ * Returns null if SMTP_HOST / SMTP_USER / SMTP_PASS are not configured.
+ */
+const createTransporter = () => {
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env
+
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+        return null
+    }
+
+    const port = Number(SMTP_PORT) || 587
+
+    return nodemailer.createTransport({
+        host: SMTP_HOST,
+        port,
+        secure: port === 465,
+        auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASS
+        }
+    })
 }
 
 /**
- * Sends a welcome email if SendGrid is configured in the environment.
+ * Sends a welcome email when a new user registers.
+ * Silently skips if SMTP credentials are not configured.
+ *
+ * @param {string} email - Recipient email address.
+ * @param {string} name - Recipient display name.
  */
 const sendWelcomeEmail = async (email, name) => {
-    if (!sendgridAPIKey) return
+    const transporter = createTransporter()
+    if (!transporter) return
 
     try {
-        await sgMail.send({
+        await transporter.sendMail({
+            from: `"Task App" <${getSenderEmail()}>`,
             to: email,
-            from: senderEmail,
             subject: 'Welcome to Task App',
             text: `Welcome to the app, ${name}! Hope you enjoy it!`
         })
@@ -26,15 +51,20 @@ const sendWelcomeEmail = async (email, name) => {
 }
 
 /**
- * Sends a farewell email upon account deletion if SendGrid is configured.
+ * Sends a farewell email upon user account deletion.
+ * Silently skips if SMTP credentials are not configured.
+ *
+ * @param {string} email - Recipient email address.
+ * @param {string} name - Recipient display name.
  */
 const sendFarewellEmail = async (email, name) => {
-    if (!sendgridAPIKey) return
+    const transporter = createTransporter()
+    if (!transporter) return
 
     try {
-        await sgMail.send({
+        await transporter.sendMail({
+            from: `"Task App" <${getSenderEmail()}>`,
             to: email,
-            from: senderEmail,
             subject: 'Successfully Cancelled Task App Subscription',
             text: `Farewell ${name}! Hope to see you again!`
         })

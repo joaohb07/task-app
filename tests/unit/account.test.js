@@ -1,64 +1,76 @@
+const nodemailer = require('nodemailer')
+const { sendWelcomeEmail, sendFarewellEmail } = require('../../src/emails/account')
+
+jest.mock('nodemailer')
+
 describe('Email Account Service (src/emails/account.js)', () => {
     const originalEnv = process.env
 
     beforeEach(() => {
-        jest.resetModules()
+        jest.clearAllMocks()
         process.env = { ...originalEnv }
+        delete process.env.SMTP_FROM
     })
 
     afterAll(() => {
         process.env = originalEnv
     })
 
-    it('should skip sending emails when SEND_EMAIL_API_KEY is not configured', async () => {
-        delete process.env.SEND_EMAIL_API_KEY
-        const sgMail = require('@sendgrid/mail')
-        const sendSpy = jest.spyOn(sgMail, 'send').mockResolvedValue({})
-        const { sendWelcomeEmail, sendFarewellEmail } = require('../../src/emails/account')
+    it('should skip sending emails when SMTP credentials are not configured', async () => {
+        delete process.env.SMTP_HOST
+        delete process.env.SMTP_USER
+        delete process.env.SMTP_PASS
 
         await sendWelcomeEmail('test@example.com', 'João')
         await sendFarewellEmail('test@example.com', 'João')
 
-        expect(sendSpy).not.toHaveBeenCalled()
+        expect(nodemailer.createTransport).not.toHaveBeenCalled()
     })
 
-    it('should configure API key and send welcome and farewell emails when key is present', async () => {
-        process.env.SEND_EMAIL_API_KEY = 'SG.fake-test-key'
-        process.env.SEND_EMAIL_FROM = 'noreply@taskapp.local'
+    it('should create SMTP transporter and send welcome and farewell emails', async () => {
+        process.env.SMTP_HOST = 'smtp.gmail.com'
+        process.env.SMTP_PORT = '587'
+        process.env.SMTP_USER = 'sender@taskapp.local'
+        process.env.SMTP_PASS = 'app-secret-pass'
 
-        const sgMail = require('@sendgrid/mail')
-        const setApiKeySpy = jest.spyOn(sgMail, 'setApiKey').mockImplementation(() => {})
-        const sendSpy = jest.spyOn(sgMail, 'send').mockResolvedValue({})
-
-        const { sendWelcomeEmail, sendFarewellEmail } = require('../../src/emails/account')
-
-        expect(setApiKeySpy).toHaveBeenCalledWith('SG.fake-test-key')
+        const sendMailMock = jest.fn().mockResolvedValue({ messageId: '123' })
+        nodemailer.createTransport.mockReturnValue({ sendMail: sendMailMock })
 
         await sendWelcomeEmail('joao@example.com', 'João')
-        expect(sendSpy).toHaveBeenCalledWith({
+        expect(nodemailer.createTransport).toHaveBeenCalledWith({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'sender@taskapp.local',
+                pass: 'app-secret-pass'
+            }
+        })
+        expect(sendMailMock).toHaveBeenCalledWith({
+            from: '"Task App" <sender@taskapp.local>',
             to: 'joao@example.com',
-            from: 'noreply@taskapp.local',
             subject: 'Welcome to Task App',
             text: 'Welcome to the app, João! Hope you enjoy it!'
         })
 
         await sendFarewellEmail('joao@example.com', 'João')
-        expect(sendSpy).toHaveBeenCalledWith({
+        expect(sendMailMock).toHaveBeenCalledWith({
+            from: '"Task App" <sender@taskapp.local>',
             to: 'joao@example.com',
-            from: 'noreply@taskapp.local',
             subject: 'Successfully Cancelled Task App Subscription',
             text: 'Farewell João! Hope to see you again!'
         })
     })
 
-    it('should catch and log warning when SendGrid throws an error', async () => {
-        process.env.SEND_EMAIL_API_KEY = 'SG.fake-test-key'
-        const sgMail = require('@sendgrid/mail')
-        jest.spyOn(sgMail, 'setApiKey').mockImplementation(() => {})
-        jest.spyOn(sgMail, 'send').mockRejectedValue(new Error('SendGrid timeout'))
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    it('should catch and log warning when SMTP transport fails', async () => {
+        process.env.SMTP_HOST = 'smtp.gmail.com'
+        process.env.SMTP_PORT = '465'
+        process.env.SMTP_USER = 'sender@taskapp.local'
+        process.env.SMTP_PASS = 'app-secret-pass'
 
-        const { sendWelcomeEmail, sendFarewellEmail } = require('../../src/emails/account')
+        const sendMailMock = jest.fn().mockRejectedValue(new Error('SMTP connection timeout'))
+        nodemailer.createTransport.mockReturnValue({ sendMail: sendMailMock })
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
 
         await sendWelcomeEmail('joao@example.com', 'João')
         await sendFarewellEmail('joao@example.com', 'João')
