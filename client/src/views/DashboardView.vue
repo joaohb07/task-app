@@ -162,122 +162,125 @@ const formatDate = (iso) => {
         </div>
       </div>
 
-      <!-- Data Table -->
-      <table class="cds--data-table cds--data-table--zebra">
-        <thead>
-          <tr>
-            <th style="width: 64px">Done</th>
-            <th>Description</th>
-            <th style="width: 130px">Status</th>
-            <th style="width: 140px">Created</th>
-            <th style="width: 120px; text-align: right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="taskStore.loading">
-            <td colspan="5" class="empty-cell">Loading tasks...</td>
-          </tr>
-          <tr v-else-if="taskStore.items.length === 0">
-            <td colspan="5" class="empty-cell">
-              No tasks found for the current filter. Create one above!
-            </td>
-          </tr>
-          <tr v-for="task in taskStore.items" :key="task._id">
-            <td>
-              <input
-                type="checkbox"
-                :checked="task.completed"
-                aria-label="Toggle task status"
-                class="task-checkbox"
-                @change="taskStore.toggleTask(task)"
-              />
-            </td>
-            <td>
-              <template v-if="editingId === task._id">
+      <!-- Data Table with horizontal scroll wrapper -->
+      <div class="table-scroll-wrapper">
+        <table class="cds--data-table cds--data-table--zebra">
+          <thead>
+            <tr>
+              <th style="width: 64px">Done</th>
+              <th>Description</th>
+              <th style="width: 130px">Status</th>
+              <th style="width: 140px">Created</th>
+              <th style="width: 120px; text-align: right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="taskStore.loading">
+              <td colspan="5" class="empty-cell">Loading tasks...</td>
+            </tr>
+            <tr v-else-if="taskStore.items.length === 0">
+              <td colspan="5" class="empty-cell">
+                No tasks found for the current filter. Create one above!
+              </td>
+            </tr>
+            <tr v-for="task in taskStore.items" :key="task._id">
+              <td>
                 <input
-                  v-model="editingText"
-                  type="text"
-                  class="cds--text-input cds--text-input--sm"
-                  @keyup.enter="saveEdit(task._id)"
-                  @keyup.esc="cancelEdit"
+                  type="checkbox"
+                  :checked="task.completed"
+                  aria-label="Toggle task status"
+                  class="task-checkbox"
+                  @change="taskStore.toggleTask(task)"
                 />
-              </template>
-              <span v-else :class="{ 'task-done-text': task.completed }">
-                {{ task.description }}
-              </span>
-            </td>
-            <td>
-              <span
-                class="cds--tag cds--tag--sm"
-                :class="task.completed ? 'cds--tag--green' : 'cds--tag--warm-gray'"
-              >
-                <span class="cds--tag__label">{{ task.completed ? 'Completed' : 'Pending' }}</span>
-              </span>
-            </td>
-            <td>{{ formatDate(task.createdAt) }}</td>
-            <td class="actions-cell">
-              <template v-if="editingId === task._id">
-                <button
-                  type="button"
-                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                  title="Save"
-                  @click="saveEdit(task._id)"
+              </td>
+              <td>
+                <template v-if="editingId === task._id">
+                  <input
+                    v-model="editingText"
+                    type="text"
+                    class="cds--text-input cds--text-input--sm"
+                    @keyup.enter="saveEdit(task._id)"
+                    @keyup.esc="cancelEdit"
+                  />
+                </template>
+                <span v-else :class="{ 'task-done-text': task.completed }">
+                  {{ task.description }}
+                </span>
+              </td>
+              <td>
+                <span
+                  class="cds--tag cds--tag--sm"
+                  :class="task.completed ? 'cds--tag--green' : 'cds--tag--warm-gray'"
                 >
-                  <Checkmark />
-                </button>
-                <button
-                  type="button"
-                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                  title="Cancel"
-                  @click="cancelEdit"
-                >
-                  <Close />
-                </button>
-              </template>
-              <template v-else>
-                <button
-                  type="button"
-                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                  title="Edit description"
-                  @click="startEdit(task)"
-                >
-                  <Edit />
-                </button>
-                <button
-                  type="button"
-                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                  title="Delete task"
-                  @click="taskStore.deleteTask(task._id)"
-                >
-                  <TrashCan />
-                </button>
-              </template>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                  <span class="cds--tag__label">{{ task.completed ? 'Completed' : 'Pending' }}</span>
+                </span>
+              </td>
+              <td>{{ formatDate(task.createdAt) }}</td>
+              <td class="actions-cell">
+                <template v-if="editingId === task._id">
+                  <button
+                    type="button"
+                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                    title="Save"
+                    @click="saveEdit(task._id)"
+                  >
+                    <Checkmark />
+                  </button>
+                  <button
+                    type="button"
+                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                    title="Cancel"
+                    @click="cancelEdit"
+                  >
+                    <Close />
+                  </button>
+                </template>
+                <template v-else>
+                  <button
+                    type="button"
+                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                    title="Edit description"
+                    @click="startEdit(task)"
+                  >
+                    <Edit />
+                  </button>
+                  <button
+                    type="button"
+                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                    title="Delete task"
+                    @click="taskStore.deleteTask(task._id)"
+                  >
+                    <TrashCan />
+                  </button>
+                </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <!-- Carbon Pagination Footer -->
-      <div class="cds--pagination">
-        <div class="cds--pagination__left">
-          <span class="cds--pagination__text">
-            Showing {{ taskStore.items.length }} of {{ taskStore.total }} items
-          </span>
-        </div>
-        <div class="cds--pagination__right">
-          <span class="cds--pagination__text">Page {{ taskStore.page }} of {{ totalPages }}</span>
+      <!-- Responsive Pagination Footer -->
+      <div class="table-pagination-bar">
+        <span class="pagination-info">
+          Showing {{ taskStore.items.length }} of {{ taskStore.total }} items
+        </span>
+
+        <div class="pagination-controls">
+          <span class="pagination-info">Page {{ taskStore.page }} of {{ totalPages }}</span>
           <button
             type="button"
-            class="cds--btn cds--btn--ghost cds--btn--icon-only"
+            class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm pagination-btn"
             :disabled="taskStore.page <= 1"
+            aria-label="Previous page"
             @click="changePage(-1)"
           >
             <ChevronLeft />
           </button>
           <button
             type="button"
-            class="cds--btn cds--btn--ghost cds--btn--icon-only"
+            class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm pagination-btn"
             :disabled="taskStore.page >= totalPages"
+            aria-label="Next page"
             @click="changePage(1)"
           >
             <ChevronRight />
@@ -358,6 +361,11 @@ const formatDate = (iso) => {
   min-width: 160px;
 }
 
+.table-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .task-checkbox {
   width: 18px;
   height: 18px;
@@ -385,5 +393,46 @@ const formatDate = (iso) => {
   text-align: center;
   padding: 2.5rem 1rem;
   color: var(--cds-text-secondary);
+}
+
+.table-pagination-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  background-color: var(--cds-layer);
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.pagination-info {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+}
+
+.pagination-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .create-bar {
+    flex-direction: column;
+  }
+
+  .create-bar .cds--btn {
+    width: 100%;
+    max-width: 100%;
+    justify-content: space-between;
+  }
 }
 </style>
