@@ -3,8 +3,8 @@ services:
     image: mongo:7
     container_name: task-mongo
     restart: unless-stopped
-    ports:
-      - "27017:27017"
+    # ports:
+    #   - "27017:27017" # Uncomment to expose MongoDB directly without a reverse proxy
     volumes:
       - task_mongo_data:/data/db
     networks:
@@ -22,8 +22,8 @@ services:
     depends_on:
       task-mongo:
         condition: service_healthy
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000" # Uncomment to expose the app directly without a reverse proxy
     env_file:
       - .env
     environment:
