@@ -1,111 +1,185 @@
 <p align="center">
-    <img src="./public/img/icon.png" height="75">
-    <h1 align="center"><b>Task App</b></h1>
+  <img src="client/public/icon.png" height="75" alt="Task App Icon">
+  <h1 align="center"><b>Task Manager App</b></h1>
 </p>
 
 <p align="center">
-  <a href="https://weather-app-ix73.onrender.com">
-    <img alt="Heroku" src="https://badgen.net/badge/icon/Live Preview?icon=terminal&label=Render&color=black" />
+  <a href="https://jhbserver.tail4bcb71.ts.net/task-app/">
+    <img alt="Live Preview" src="https://badgen.net/badge/icon/Live%20Preview?icon=terminal&label=Self-Hosted&color=blue" />
   </a>
+  <img alt="Docker" src="https://badgen.net/badge/Docker/Multi-Stage%20Alpine?color=2496ED" />
+  <img alt="Tests" src="https://badgen.net/badge/Tests/Jest%20%26%20Cypress?color=green" />
+  <img alt="CI/CD" src="https://badgen.net/badge/CI%2FCD/GitHub%20Actions?color=black" />
 </p>
 
-> A Task manager App using Node.js with mongoDB for database.
+> A Full Stack, containerized task management platform engineered with **Node.js**, **Express**, **MongoDB**, and **Vue 3 (IBM Carbon Design System)** — featuring JWT authentication, user avatar processing, real-time KPI metrics, automated testing, and self-hosted CI/CD deployment.
+
+---
 
 ## Live Preview
 
-Check this [***app***](https://task-app-36a0.onrender.com) live preview on render.
-
-## Technologies
-
-Technologies I used to develop this App.
-
-|Technologies|Purpose|
-|---|---|
-|[***Node.js***](https://nodejs.org/)|App BackEnd.|
-|[***MongoDB***](https://www.mongodb.com/)|Local DataBase set.|
-|[***MongoDB Atlas***](https://www.mongodb.com/atlas/database)|Multicloud DataBase remote set, to link with Render deployment.|
-|[***Render***](render.com)|Used to deploy the app.|
-|[***Express***](https://expressjs.com/)|Create Web Server.|
-|[***Mongoose***](https://mongoosejs.com/)|Execute DB Operations.|
-|[***sendgrid/mail for SendGrid API***](https://sendgrid.com/solutions/email-api/)|For sending emails to user (only sends when creating an user or deleting an user).|
-|[***BCryptJS***](https://www.npmjs.com/package/bcryptjs)|For hashing and authenticating user password.|
-|[***JSONWebToken***](https://www.npmjs.com/package/jsonwebtoken)|For generating user session authentication token.|
-|[***Validator***](https://www.npmjs.com/package/validator)|For validating user emails.|
-|[***Multer***](https://www.npmjs.com/package/multer)|Upload files via API Endpoints. In this case, user avatar icon image.|
-|[***Sharp***](https://www.npmjs.com/package/sharp)|Convert large images to smaller formats.|
-|[***Env-cmd***](https://www.npmjs.com/package/env-cmd)|Deal with environment variables.|
-|[***Nodemon***](https://www.npmjs.com/package/nodemon)|Restart local server, for local development only.|
-|[***hbs***](https://www.npmjs.com/package/hbs)|To use with Express to generate dinamic HTML views. Shorthand for handlebars.js.|
+Check out the [***Live App***](https://jhbserver.tail4bcb71.ts.net/task-app/) self-hosted on Ubuntu Server via Docker, Nginx Proxy Manager, and Tailscale Funnel.
 
 ## Documentation
 
-Check this app [***documentation***](https://joaohb07.github.io/documentation/web/task_app/task_app/) for more technical details.
+Access my official projects [**documentation**](https://joaohb07.github.io/documentation/).
 
-## Local Development
+---
 
-> BackEnd only
+## Features
 
-### Installation
+* **Authentication & Security:** JWT-based stateless/session token authentication, password hashing with `bcryptjs`, single-device or global multi-device logout, and permanent account deletion.
+* **Task Management (CRUD):** Create, toggle completion status, inline-edit descriptions, delete tasks, and filter (`All` / `Pending` / `Completed`), sort, and paginate across personal backlogs.
+* **Real-Time KPI Dashboard:** Live summary tiles tracking total, pending, and completed task counts.
+* **Profile & Avatar Processing:** Update user credentials and upload PNG/JPEG profile avatars automatically resized and normalized (`250x250`) via `Sharp`.
+* **Adaptive IBM Carbon UI:** Built with `@carbon/styles` and `@carbon/icons-vue`, supporting dynamic Dark (`g100`) and Light (`g10`) theme switching and responsive mobile drawer navigation.
+* **Automated Email Notifications:** Welcome and account cancellation emails powered by `Nodemailer`.
 
-This app is built in [***Node.js***](https://nodejs.org/en/) and uses [***MongoDB***](https://www.mongodb.com/try/download/community) for local development, make sure you have both installed and set before you begin this process. I suggest you also download [***MongoDB Compass***](https://www.mongodb.com/try/download/shell) to get a UI view from your local database.
+---
 
-To install dependencies to run this code locally, follow these steps:
+## Prerequisites
 
-1. Clone `backend` branch from this repo:
+* **Docker** & **Docker Compose** — for containerized execution (recommended)
+* **Node.js** (v22+) & **npm** + **MongoDB** — for native local development without Docker
+
+---
+
+## Installation & Environment Setup
+
+1. Clone the repository:
 
     ```bash
-    git clone <repo-url>
+    git clone https://github.com/joaohb07/task-app.git
     cd task-app
     ```
 
-2. Create an environment file `env.env` in `task-app` root folder, with the following variables:
+2. Create a `.env` file in the root directory and configure your environment variables:
 
-    ```bash
+    ```env
     PORT=3000
-    SEND_EMAIL_API_KEY=""
-    JWT_SECRET=''
-    MONGODB_URL_DB="mongodb://127.0.0.1:27017/task-manager-api"
+    JWT_SECRET=your_super_secret_jwt_key
+    MONGODB_URL_DB=mongodb://task-mongo:27017/task-manager-api
+
+    # Optional SMTP settings for Nodemailer
+    SMTP_HOST=smtp.example.com
+    SMTP_PORT=587
+    SMTP_USER=your_smtp_user
+    SMTP_PASS=your_smtp_password
     ```
 
-    - `Port` is `3000` by default;
-    - Get [***SendGridAPI key***](https://sendgrid.com/solutions/email-api/);
-    - Set up your own `JWT_SECRET`, it will be used for hashing and comparing hashed passwords. E.g.: `'batman'`;
-    - Mongo db url is `mongodb://localhost:27017/task-manager-api`, `27017` is MongoDB standard port for local DB set, followed by `/task-manager-api` which is the DB name, you can alter if you want to.
+---
 
-3. Use npm package to install dependencies:
+## Running with Docker (Recommended)
+
+The multi-stage `Dockerfile` compiles the Vue 3 + Vite bundle (`client/dist`) and serves both the static SPA and the `/api` REST endpoints from a single hardened `node:22-alpine` container (`USER node`), paired with an isolated `mongo:7` database container.
+
+1. Ensure the shared reverse-proxy network exists (or remove the external network requirement for standalone testing):
 
     ```bash
-    npm install # or, npm i
+    docker network create global-proxy
     ```
 
-### Usage
-
-To run the app locally, follow these steps:
-
-1. After you define your Mongo DB path and Mongo DB databases folder, run this command to start your DB:
+2. Build and start the containers in detached mode:
 
     ```bash
-    sudo /path/to/mongodb/folder/bin/mongod --dbpath=/path/to/mongodb/database/folder
+    docker compose up -d --build
     ```
 
-2. Run one of the following commands to execute the code:
+3. Verify container health and logs:
 
-    - Standard run:
+    ```bash
+    docker ps
+    docker logs task-app
+    ```
 
-        ```bash
-        npm run start
-        ```
+*(Note: If running locally without a reverse proxy, uncomment the `ports` sections in `docker-compose.yml` and access `http://localhost:3000`.)*
 
-    - Run with `nodemon` **(recommended)**:
+---
 
-        ```bash
-        npm run dev
-        ```
+## Running Locally (Without Docker)
 
-3. Check the [***documentation***](https://joaohb07.github.io/documentation/web/task_app/task_app_endpoints/) to know how to test API Endpoints with postman.
+1. Install dependencies for both backend and frontend:
 
-## Contributing
+    ```bash
+    # Install backend dependencies
+    npm install
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+    # Install frontend dependencies
+    cd client && npm install && cd ..
+    ```
 
-Please make sure to update tests as appropriate.
+2. Make sure a local MongoDB instance is running and update `MONGODB_URL_DB=mongodb://127.0.0.1:27017/task-manager-api` in `.env`.
+
+3. Start the backend API server (runs on `http://localhost:3000`):
+
+    ```bash
+    npm run dev
+    ```
+
+4. In a separate terminal, start the Vite frontend dev server (runs on `http://localhost:5173` with automatic `/api` proxy to port `3000`):
+
+    ```bash
+    cd client
+    npm run dev
+    ```
+
+5. Open `http://localhost:5173` in your browser.
+
+---
+
+## Testing
+
+The project enforces automated quality gates via GitHub Actions (`ci.yml`) covering both backend and frontend layers.
+
+### Backend Unit & Integration Tests (Jest + Supertest)
+
+Runs against an isolated in-memory MongoDB instance (`mongodb-memory-server`) with mocked email transport — no external database required:
+
+```bash
+npm test
+```
+
+### Frontend Component & E2E Tests (Cypress)
+
+1. Run Cypress **Component Tests** headlessly:
+
+    ```bash
+    cd client
+    npm run test:component
+    ```
+
+2. Run Cypress **End-to-End (E2E) Tests** headlessly (with `npm run dev` running on `http://localhost:5173`):
+
+    ```bash
+    cd client
+    npm run test:e2e
+    ```
+
+3. Or open the interactive Cypress Test Runner:
+
+    ```bash
+    cd client
+    npm run cy:open
+    ```
+
+---
+
+## Technologies
+
+### Backend & Persistence
+* **[Node.js](https://nodejs.org/)** & **[Express](https://expressjs.com/)** — RESTful API server and static SPA host.
+* **[MongoDB](https://www.mongodb.com/)** & **[Mongoose](https://mongoosejs.com/)** — Document persistence, schema validation, virtual relations, and cascade deletion hooks.
+* **[JSON Web Tokens (JWT)](https://jwt.io/)** & **[bcryptjs](https://www.npmjs.com/package/bcryptjs)** — Authentication and cryptographic password hashing.
+* **[Multer](https://www.npmjs.com/package/multer)** & **[Sharp](https://sharp.pixelplumbing.com/)** — Multipart file upload validation and high-performance image resizing.
+* **[Nodemailer](https://nodemailer.com/)** — Transactional email delivery.
+
+### Frontend & Design System
+* **[Vue 3](https://vuejs.org/)** (Composition API) & **[Vite](https://vite.dev/)** — Reactive Single-Page Application and optimized asset bundling.
+* **[Pinia](https://pinia.vuejs.org/)** & **[Vue Router](https://router.vuejs.org/)** — Centralized state management and guarded client-side routing.
+* **[IBM Carbon Design System](https://carbondesignsystem.com/)** (`@carbon/styles`, `@carbon/icons-vue`) — Enterprise UI components, design tokens, and adaptive `g100`/`g10` themes.
+* **[Axios](https://axios-http.com/)** — HTTP client with automatic Bearer token injection and relative subpath resolution.
+
+### Testing, Infrastructure & DevOps
+* **[Jest](https://jestjs.io/)**, **[Supertest](https://www.npmjs.com/package/supertest)**, & **[mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server)** — Isolated backend unit and API integration testing.
+* **[Cypress](https://www.cypress.io/)** — Automated Vue component and end-to-end browser testing.
+* **[Docker](https://www.docker.com/)**, **[Nginx Proxy Manager](https://nginxproxymanager.com/)**, **[Tailscale Funnel](https://tailscale.com/kb/1223/funnel)**, & **[GitHub Actions](https://github.com/features/actions)** — Multi-stage containerization, reverse proxy subpath routing, zero-trust edge ingress, and automated CI/CD pipelines.
