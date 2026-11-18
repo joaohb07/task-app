@@ -73,7 +73,7 @@ const handleSubmit = async () => {
             v-model="name"
             type="text"
             required
-            placeholder="João Botelho"
+            placeholder="Jhon Doe"
             class="cds--text-input"
           />
         </div>
