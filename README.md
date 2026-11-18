@@ -39,8 +39,7 @@ Access my official projects [**documentation**](https://joaohb07.github.io/docum
 
 ## Prerequisites
 
-* **Docker** & **Docker Compose** — for containerized execution (recommended)
-* **Node.js** (v22+) & **npm** + **MongoDB** — for native local development without Docker
+* **Docker** & **Docker Compose** — for containerized execution
 
 ---
 
@@ -69,7 +68,7 @@ Access my official projects [**documentation**](https://joaohb07.github.io/docum
 
 ---
 
-## Running with Docker (Recommended)
+## Running with Docker
 
 The multi-stage `Dockerfile` compiles the Vue 3 + Vite bundle (`client/dist`) and serves both the static SPA and the `/api` REST endpoints from a single hardened `node:22-alpine` container (`USER node`), paired with an isolated `mongo:7` database container.
 
@@ -93,37 +92,6 @@ The multi-stage `Dockerfile` compiles the Vue 3 + Vite bundle (`client/dist`) an
     ```
 
 *(Note: If running locally without a reverse proxy, uncomment the `ports` sections in `docker-compose.yml` and access `http://localhost:3000`.)*
-
----
-
-## Running Locally (Without Docker)
-
-1. Install dependencies for both backend and frontend:
-
-    ```bash
-    # Install backend dependencies
-    npm install
-
-    # Install frontend dependencies
-    cd client && npm install && cd ..
-    ```
-
-2. Make sure a local MongoDB instance is running and update `MONGODB_URL_DB=mongodb://127.0.0.1:27017/task-manager-api` in `.env`.
-
-3. Start the backend API server (runs on `http://localhost:3000`):
-
-    ```bash
-    npm run dev
-    ```
-
-4. In a separate terminal, start the Vite frontend dev server (runs on `http://localhost:5173` with automatic `/api` proxy to port `3000`):
-
-    ```bash
-    cd client
-    npm run dev
-    ```
-
-5. Open `http://localhost:5173` in your browser.
 
 ---
 
