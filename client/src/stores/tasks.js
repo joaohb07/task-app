@@ -11,9 +11,10 @@ export const useTaskStore = defineStore('tasks', {
       pending: 0
     },
     filter: 'all', // 'all' | 'pending' | 'completed'
+    selectedTag: '', // '' | tagId
     sortBy: 'createdAt:desc',
     page: 1,
-    limit: 10,
+    limit: 8,
     loading: false,
     error: null
   }),
@@ -28,14 +29,16 @@ export const useTaskStore = defineStore('tasks', {
           skip: (this.page - 1) * this.limit,
           sortBy: this.sortBy
         }
-
         if (this.filter === 'completed') params.completed = 'true'
         if (this.filter === 'pending') params.completed = 'false'
+        if (this.selectedTag) params.tag = this.selectedTag
 
         const { data } = await api.get('/tasks', { params })
         this.items = data.tasks
         this.total = data.total
-        this.stats = data.stats
+        if (data.stats) {
+          this.stats = data.stats
+        }
       } catch (err) {
         this.error = err.response?.data?.error || 'Failed to load tasks.'
       } finally {
@@ -43,28 +46,46 @@ export const useTaskStore = defineStore('tasks', {
       }
     },
 
-    async createTask(description) {
-      await api.post('/tasks', { description, completed: false })
-      this.page = 1
-      await this.fetchTasks()
+    async createTask(payload) {
+      this.error = null
+      try {
+        await api.post('/tasks', payload)
+        this.page = 1
+        await this.fetchTasks()
+        return true
+      } catch (err) {
+        this.error = err.response?.data?.error || 'Failed to create task.'
+        return false
+      }
+    },
+
+    async updateTask(id, payload) {
+      this.error = null
+      try {
+        await api.patch(`/tasks/${id}`, payload)
+        await this.fetchTasks()
+        return true
+      } catch (err) {
+        this.error = err.response?.data?.error || 'Failed to update task.'
+        return false
+      }
     },
 
     async toggleTask(task) {
-      await api.patch(`/tasks/${task._id}`, { completed: !task.completed })
-      await this.fetchTasks()
-    },
-
-    async updateTaskDescription(id, description) {
-      await api.patch(`/tasks/${id}`, { description })
-      await this.fetchTasks()
+      await this.updateTask(task._id, { completed: !task.completed })
     },
 
     async deleteTask(id) {
-      await api.delete(`/tasks/${id}`)
-      if (this.items.length === 1 && this.page > 1) {
-        this.page -= 1
+      this.error = null
+      try {
+        await api.delete(`/tasks/${id}`)
+        if (this.items.length === 1 && this.page > 1) {
+          this.page -= 1
+        }
+        await this.fetchTasks()
+      } catch (err) {
+        this.error = err.response?.data?.error || 'Failed to delete task.'
       }
-      await this.fetchTasks()
     }
   }
 })

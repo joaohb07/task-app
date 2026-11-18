@@ -36,7 +36,11 @@ const colorOptions = [
   { value: 'cool-gray', label: 'Cool Gray' }
 ]
 
-const totalPages = computed(() => Math.max(1, Math.ceil(tagStore.total / tagStore.limit)))
+const tagItems = computed(() => tagStore.items || [])
+const totalTags = computed(() => tagStore.total ?? tagItems.value.length)
+const currentPage = computed(() => tagStore.page || 1)
+const pageLimit = computed(() => tagStore.limit || 10)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalTags.value / pageLimit.value)))
 
 watch(
   () => props.open,
@@ -48,7 +52,8 @@ watch(
     } else {
       cancelEdit()
     }
-  }
+  },
+  { immediate: true }
 )
 
 const handleCreateTag = async () => {
@@ -100,8 +105,9 @@ const handleDelete = async (id) => {
 }
 
 const changePage = (delta) => {
-  const next = tagStore.page + delta
+  const next = currentPage.value + delta
   if (next >= 1 && next <= totalPages.value) {
+    cancelEdit()
     tagStore.page = next
     tagStore.fetchTags()
   }
@@ -111,7 +117,7 @@ const changePage = (delta) => {
 <template>
   <div
     v-if="open"
-    class="cds--modal is-visible"
+    class="cds--modal is-visible tags-modal-layer"
     role="dialog"
     aria-modal="true"
     aria-labelledby="manage-tags-modal-title"
@@ -172,12 +178,12 @@ const changePage = (delta) => {
               <tr v-if="tagStore.loading">
                 <td colspan="2" class="tag-empty-cell">Loading tags...</td>
               </tr>
-              <tr v-else-if="tagStore.items.length === 0">
+              <tr v-else-if="tagItems.length === 0">
                 <td colspan="2" class="tag-empty-cell">
                   No tags created yet. Add your first tag above!
                 </td>
               </tr>
-              <tr v-for="tag in tagStore.items" :key="tag._id">
+              <tr v-for="tag in tagItems" :key="tag._id">
                 <td>
                   <div v-if="editingId === tag._id" class="inline-edit-row">
                     <input
@@ -252,14 +258,14 @@ const changePage = (delta) => {
         <!-- Pagination Footer -->
         <div class="tag-pagination-bar">
           <span class="pagination-info">
-            Showing {{ tagStore.items.length }} of {{ tagStore.total }} tags
+            Showing {{ tagItems.length }} of {{ totalTags }} tags
           </span>
           <div class="pagination-controls">
-            <span class="pagination-info">Page {{ tagStore.page }} of {{ totalPages }}</span>
+            <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
             <button
               type="button"
               class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-              :disabled="tagStore.page <= 1"
+              :disabled="currentPage <= 1"
               aria-label="Previous tags page"
               @click="changePage(-1)"
             >
@@ -268,7 +274,7 @@ const changePage = (delta) => {
             <button
               type="button"
               class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-              :disabled="tagStore.page >= totalPages"
+              :disabled="currentPage >= totalPages"
               aria-label="Next tags page"
               @click="changePage(1)"
             >
@@ -288,6 +294,10 @@ const changePage = (delta) => {
 </template>
 
 <style scoped>
+.tags-modal-layer {
+  z-index: 9100;
+}
+
 .modal-box {
   max-width: 560px;
 }

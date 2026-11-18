@@ -1,48 +1,69 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useTaskStore } from '../stores/tasks'
+import { useTagStore } from '../stores/tags'
 import Add from '@carbon/icons-vue/es/add/16'
 import TrashCan from '@carbon/icons-vue/es/trash-can/16'
 import Edit from '@carbon/icons-vue/es/edit/16'
-import Checkmark from '@carbon/icons-vue/es/checkmark/16'
-import Close from '@carbon/icons-vue/es/close/16'
+import View from '@carbon/icons-vue/es/view/16'
 import ChevronLeft from '@carbon/icons-vue/es/chevron--left/16'
 import ChevronRight from '@carbon/icons-vue/es/chevron--right/16'
 import TagIcon from '@carbon/icons-vue/es/tag/16'
 import ManageTagsModal from '../components/ManageTagsModal.vue'
+import TaskModal from '../components/TaskModal.vue'
 
 const taskStore = useTaskStore()
+const tagStore = useTagStore()
 
 const isTagsModalOpen = ref(false)
 const isTaskModalOpen = ref(false)
-const editingId = ref(null)
-const editingText = ref('')
+const taskModalMode = ref('create') // 'create' | 'edit' | 'view'
+const activeTask = ref(null)
 
 onMounted(() => {
   taskStore.fetchTasks()
+  tagStore.fetchAllTags()
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(taskStore.total / taskStore.limit)))
 
-const startEdit = (task) => {
-  editingId.value = task._id
-  editingText.value = task.description
+const openCreateTask = () => {
+  activeTask.value = null
+  taskModalMode.value = 'create'
+  isTaskModalOpen.value = true
 }
 
-const cancelEdit = () => {
-  editingId.value = null
-  editingText.value = ''
+const openViewTask = (task) => {
+  activeTask.value = task
+  taskModalMode.value = 'view'
+  isTaskModalOpen.value = true
 }
 
-const saveEdit = async (id) => {
-  const trimmed = editingText.value.trim()
-  if (!trimmed) return
-  await taskStore.updateTaskDescription(id, trimmed)
-  cancelEdit()
+const openEditTask = (task) => {
+  activeTask.value = task
+  taskModalMode.value = 'edit'
+  isTaskModalOpen.value = true
+}
+
+const handleTagsChanged = () => {
+  tagStore.fetchAllTags()
+  if (
+    taskStore.selectedTag &&
+    !tagStore.allTags.some((t) => t._id === taskStore.selectedTag)
+  ) {
+    taskStore.selectedTag = ''
+  }
+  taskStore.fetchTasks()
 }
 
 const setFilter = (filter) => {
   taskStore.filter = filter
+  taskStore.page = 1
+  taskStore.fetchTasks()
+}
+
+const changeTagFilter = (e) => {
+  taskStore.selectedTag = e.target.value
   taskStore.page = 1
   taskStore.fetchTasks()
 }
@@ -61,12 +82,21 @@ const changePage = (delta) => {
   }
 }
 
-const formatDate = (iso) => {
+const formatDate = (iso, useUtc = false) => {
+  if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
+    ...(useUtc ? { timeZone: 'UTC' } : {})
   })
+}
+
+const isOverdue = (task) => {
+  if (!task.dueDate || task.completed) return false
+  const todayUtc = new Date().toISOString().split('T')[0]
+  const dueUtc = new Date(task.dueDate).toISOString().split('T')[0]
+  return dueUtc < todayUtc
 }
 </script>
 
@@ -108,7 +138,7 @@ const formatDate = (iso) => {
         <button
           type="button"
           class="cds--btn cds--btn--primary"
-          @click="isTaskModalOpen = true"
+          @click="openCreateTask"
         >
           <span>Add Task</span>
           <Add class="cds--btn__icon" />
@@ -120,10 +150,18 @@ const formatDate = (iso) => {
     <ManageTagsModal
       :open="isTagsModalOpen"
       @close="isTagsModalOpen = false"
-      @tags-changed="taskStore.fetchTasks()"
+      @tags-changed="handleTagsChanged"
     />
 
-    <!-- Create Task Modal (será conectado no próximo passo) -->
+    <!-- Create / Edit / View Task Modal -->
+    <TaskModal
+      :open="isTaskModalOpen"
+      :mode="taskModalMode"
+      :task="activeTask"
+      @update:mode="taskModalMode = $event"
+      @close="isTaskModalOpen = false"
+      @open-tags="isTagsModalOpen = true"
+    />
 
     <!-- Carbon Data Table Container -->
     <div class="cds--data-table-container">
@@ -136,7 +174,7 @@ const formatDate = (iso) => {
         </div>
       </div>
 
-      <!-- Table Toolbar (Filters + Sorting) -->
+      <!-- Table Toolbar (Status Filters + Tag Filter + Sorting) -->
       <div class="table-controls-bar">
         <div class="filter-tabs">
           <button
@@ -165,19 +203,38 @@ const formatDate = (iso) => {
           </button>
         </div>
 
-        <div class="sort-box">
-          <label for="sort-select" class="sort-label">Sort by:</label>
-          <select
-            id="sort-select"
-            :value="taskStore.sortBy"
-            class="cds--select-input cds--select-input--sm sort-select"
-            @change="changeSort"
-          >
-            <option value="createdAt:desc">Newest first</option>
-            <option value="createdAt:asc">Oldest first</option>
-            <option value="completed:asc">Pending first</option>
-            <option value="completed:desc">Completed first</option>
-          </select>
+        <div class="toolbar-selects">
+          <div class="sort-box">
+            <label for="tag-filter-select" class="sort-label">Tag:</label>
+            <select
+              id="tag-filter-select"
+              :value="taskStore.selectedTag"
+              class="cds--select-input cds--select-input--sm sort-select"
+              @change="changeTagFilter"
+            >
+              <option value="">All tags</option>
+              <option v-for="tag in tagStore.allTags" :key="tag._id" :value="tag._id">
+                {{ tag.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="sort-box">
+            <label for="sort-select" class="sort-label">Sort by:</label>
+            <select
+              id="sort-select"
+              :value="taskStore.sortBy"
+              class="cds--select-input cds--select-input--sm sort-select"
+              @change="changeSort"
+            >
+              <option value="createdAt:desc">Newest first</option>
+              <option value="createdAt:asc">Oldest first</option>
+              <option value="dueDate:asc">Due date (earliest)</option>
+              <option value="dueDate:desc">Due date (latest)</option>
+              <option value="completed:asc">Pending first</option>
+              <option value="completed:desc">Completed first</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -186,19 +243,20 @@ const formatDate = (iso) => {
         <table class="cds--data-table cds--data-table--zebra">
           <thead>
             <tr>
-              <th style="width: 64px">Done</th>
-              <th>Description</th>
-              <th style="width: 130px">Status</th>
-              <th style="width: 140px">Created</th>
-              <th style="width: 120px; text-align: right">Actions</th>
+              <th style="width: 56px">Done</th>
+              <th>Task</th>
+              <th style="width: 220px">Tags</th>
+              <th style="width: 135px">Due Date</th>
+              <th style="width: 120px">Status</th>
+              <th style="width: 130px; text-align: right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="taskStore.loading">
-              <td colspan="5" class="empty-cell">Loading tasks...</td>
+              <td colspan="6" class="empty-cell">Loading tasks...</td>
             </tr>
             <tr v-else-if="taskStore.items.length === 0">
-              <td colspan="5" class="empty-cell">
+              <td colspan="6" class="empty-cell">
                 No tasks found for the current filter. Create one above!
               </td>
             </tr>
@@ -213,17 +271,34 @@ const formatDate = (iso) => {
                 />
               </td>
               <td>
-                <template v-if="editingId === task._id">
-                  <input
-                    v-model="editingText"
-                    type="text"
-                    class="cds--text-input cds--text-input--sm"
-                    @keyup.enter="saveEdit(task._id)"
-                    @keyup.esc="cancelEdit"
-                  />
-                </template>
-                <span v-else :class="{ 'task-done-text': task.completed }">
+                <button
+                  type="button"
+                  class="task-title-btn"
+                  :class="{ 'task-done-text': task.completed }"
+                  @click="openViewTask(task)"
+                >
                   {{ task.description }}
+                </button>
+                <p v-if="task.details" class="task-details-preview">
+                  {{ task.details }}
+                </p>
+              </td>
+              <td>
+                <div v-if="task.tags && task.tags.length > 0" class="row-tags-wrap">
+                  <span
+                    v-for="tag in task.tags"
+                    :key="tag._id"
+                    class="cds--tag cds--tag--sm"
+                    :class="`cds--tag--${tag.color || 'blue'}`"
+                  >
+                    <span class="cds--tag__label">{{ tag.name }}</span>
+                  </span>
+                </div>
+                <span v-else class="muted-dash">—</span>
+              </td>
+              <td>
+                <span :class="{ 'overdue-text': isOverdue(task) }">
+                  {{ formatDate(task.dueDate, true) }}
                 </span>
               </td>
               <td>
@@ -234,44 +309,31 @@ const formatDate = (iso) => {
                   <span class="cds--tag__label">{{ task.completed ? 'Completed' : 'Pending' }}</span>
                 </span>
               </td>
-              <td>{{ formatDate(task.createdAt) }}</td>
               <td class="actions-cell">
-                <template v-if="editingId === task._id">
-                  <button
-                    type="button"
-                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                    title="Save"
-                    @click="saveEdit(task._id)"
-                  >
-                    <Checkmark />
-                  </button>
-                  <button
-                    type="button"
-                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                    title="Cancel"
-                    @click="cancelEdit"
-                  >
-                    <Close />
-                  </button>
-                </template>
-                <template v-else>
-                  <button
-                    type="button"
-                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                    title="Edit description"
-                    @click="startEdit(task)"
-                  >
-                    <Edit />
-                  </button>
-                  <button
-                    type="button"
-                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                    title="Delete task"
-                    @click="taskStore.deleteTask(task._id)"
-                  >
-                    <TrashCan />
-                  </button>
-                </template>
+                <button
+                  type="button"
+                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                  title="View details"
+                  @click="openViewTask(task)"
+                >
+                  <View />
+                </button>
+                <button
+                  type="button"
+                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                  title="Edit task"
+                  @click="openEditTask(task)"
+                >
+                  <Edit />
+                </button>
+                <button
+                  type="button"
+                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                  title="Delete task"
+                  @click="taskStore.deleteTask(task._id)"
+                >
+                  <TrashCan />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -382,6 +444,13 @@ const formatDate = (iso) => {
   gap: 0.25rem;
 }
 
+.toolbar-selects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .sort-box {
   display: flex;
   align-items: center;
@@ -396,7 +465,7 @@ const formatDate = (iso) => {
 
 .sort-select {
   width: auto;
-  min-width: 160px;
+  min-width: 145px;
 }
 
 .table-scroll-wrapper {
@@ -411,9 +480,50 @@ const formatDate = (iso) => {
   vertical-align: middle;
 }
 
+.task-title-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--cds-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-title-btn:hover {
+  color: var(--cds-link-primary);
+  text-decoration: underline;
+}
+
 .task-done-text {
   text-decoration: line-through;
   color: var(--cds-text-secondary);
+}
+
+.task-details-preview {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  margin-top: 0.15rem;
+  max-width: 340px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.muted-dash {
+  color: var(--cds-text-secondary);
+}
+
+.overdue-text {
+  color: var(--cds-text-error);
+  font-weight: 500;
 }
 
 .actions-cell {
