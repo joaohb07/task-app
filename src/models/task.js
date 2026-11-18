@@ -1,29 +1,47 @@
-// Import libs
 const mongoose = require('mongoose')
 
-// Define new Mongoose Schema - for using timestamps
-const taskSchema = new mongoose.Schema({
-    description: { // define description
-        type: String, // description is a string
-        required: true, // description is required
-        trim: true // extra blank spaces will be removed
+const taskSchema = new mongoose.Schema(
+  {
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200
     },
-    completed: { // define completed
-        type: Boolean, // completed is a string
-        required: false, // completed is not required
-        default: false // completed default value is false
+    details: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: ''
     },
-    author: { // define author
-        type: mongoose.Schema.Types.ObjectId, // author will be the user id that created the task
-        required: true, // author will be required to create a task
-        ref: 'User' // author will be a reference to User model
+    dueDate: {
+      type: Date,
+      default: null
+    },
+    completed: {
+      type: Boolean,
+      default: false
+    },
+    tags: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tag'
+      }
+    ],
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User'
     }
-},{ // define Schema options
-    timestamps: true // Allows to have timestamps, createdAt and updateAt - to track objects
-})
+  },
+  {
+    timestamps: true
+  }
+)
 
-// Create Task model with mongoose
+taskSchema.index({ author: 1, completed: 1, createdAt: -1 })
+taskSchema.index({ author: 1, tags: 1 })
+
 const Task = mongoose.model('Task', taskSchema)
 
-// Export Task
 module.exports = Task
