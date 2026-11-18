@@ -42,6 +42,18 @@ const currentPage = computed(() => tagStore.page || 1)
 const pageLimit = computed(() => tagStore.limit || 10)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalTags.value / pageLimit.value)))
 
+const startEdit = (tag) => {
+  editingId.value = tag._id
+  editingName.value = tag.name
+  editingColor.value = tag.color || 'blue'
+}
+
+const cancelEdit = () => {
+  editingId.value = null
+  editingName.value = ''
+  editingColor.value = 'blue'
+}
+
 watch(
   () => props.open,
   (isOpen) => {
@@ -70,18 +82,6 @@ const handleCreateTag = async () => {
     newTagColor.value = 'blue'
     emit('tags-changed')
   }
-}
-
-const startEdit = (tag) => {
-  editingId.value = tag._id
-  editingName.value = tag.name
-  editingColor.value = tag.color || 'blue'
-}
-
-const cancelEdit = () => {
-  editingId.value = null
-  editingName.value = ''
-  editingColor.value = 'blue'
 }
 
 const saveEdit = async (id) => {

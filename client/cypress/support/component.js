@@ -15,7 +15,8 @@ Cypress.Commands.add('mountWithPlugins', (component, options = {}) => {
         { path: '/', redirect: '/dashboard' },
         { path: '/login', name: 'login', component: { template: '<div>Login</div>' } },
         { path: '/dashboard', name: 'dashboard', component: { template: '<div>Dashboard</div>' } },
-        { path: '/profile', name: 'profile', component: { template: '<div>Profile</div>' } }
+        { path: '/profile', name: 'profile', component: { template: '<div>Profile</div>' } },
+        { path: '/about', name: 'about', component: { template: '<div>About</div>' } }
       ]
     })
 

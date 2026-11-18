@@ -9,6 +9,7 @@ import Light from '@carbon/icons-vue/es/light/16'
 import Asleep from '@carbon/icons-vue/es/asleep/16'
 import Menu from '@carbon/icons-vue/es/menu/20'
 import Close from '@carbon/icons-vue/es/close/20'
+import Help from '@carbon/icons-vue/es/help/20'
 
 const router = useRouter()
 const route = useRoute()
@@ -75,6 +76,16 @@ const handleLogout = async () => {
           >
             <UserAvatar class="icon-inline" />
             <span>Profile</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link
+            to="/about"
+            class="cds--header__menu-item"
+            :class="{ 'cds--header__menu-item--current': route.path === '/about' }"
+          >
+            <Help class="icon-inline" />
+            <span>About</span>
           </router-link>
         </li>
       </ul>
