@@ -8,9 +8,13 @@ import Checkmark from '@carbon/icons-vue/es/checkmark/16'
 import Close from '@carbon/icons-vue/es/close/16'
 import ChevronLeft from '@carbon/icons-vue/es/chevron--left/16'
 import ChevronRight from '@carbon/icons-vue/es/chevron--right/16'
+import TagIcon from '@carbon/icons-vue/es/tag/16'
+import ManageTagsModal from '../components/ManageTagsModal.vue'
 
 const taskStore = useTaskStore()
-const newDescription = ref('')
+
+const isTagsModalOpen = ref(false)
+const isTaskModalOpen = ref(false)
 const editingId = ref(null)
 const editingText = ref('')
 
@@ -19,13 +23,6 @@ onMounted(() => {
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(taskStore.total / taskStore.limit)))
-
-const handleCreate = async () => {
-  const trimmed = newDescription.value.trim()
-  if (!trimmed) return
-  await taskStore.createTask(trimmed)
-  newDescription.value = ''
-}
 
 const startEdit = (task) => {
   editingId.value = task._id
@@ -91,20 +88,42 @@ const formatDate = (iso) => {
       </div>
     </div>
 
-    <!-- Create Task Bar -->
-    <form class="cds--tile create-bar" @submit.prevent="handleCreate">
-      <input
-        v-model="newDescription"
-        type="text"
-        placeholder="What needs to be done? Type a task description..."
-        class="cds--text-input"
-        required
-      />
-      <button type="submit" class="cds--btn cds--btn--primary">
-        <span>Add Task</span>
-        <Add class="cds--btn__icon" />
-      </button>
-    </form>
+    <!-- Action Bar: Add Task & Manage Tags -->
+    <div class="cds--tile action-bar">
+      <div class="action-bar-info">
+        <span class="cds--type-productive-heading-02">Quick Actions</span>
+        <span class="cds--type-body-compact-01 action-bar-subtitle">
+          Create new tasks or organize your personal tag catalog.
+        </span>
+      </div>
+      <div class="action-bar-buttons">
+        <button
+          type="button"
+          class="cds--btn cds--btn--secondary"
+          @click="isTagsModalOpen = true"
+        >
+          <span>Manage Tags</span>
+          <TagIcon class="cds--btn__icon" />
+        </button>
+        <button
+          type="button"
+          class="cds--btn cds--btn--primary"
+          @click="isTaskModalOpen = true"
+        >
+          <span>Add Task</span>
+          <Add class="cds--btn__icon" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Manage Tags Modal -->
+    <ManageTagsModal
+      :open="isTagsModalOpen"
+      @close="isTagsModalOpen = false"
+      @tags-changed="taskStore.fetchTasks()"
+    />
+
+    <!-- Create Task Modal (será conectado no próximo passo) -->
 
     <!-- Carbon Data Table Container -->
     <div class="cds--data-table-container">
@@ -318,12 +337,31 @@ const formatDate = (iso) => {
   color: var(--cds-support-warning);
 }
 
-.create-bar {
+.action-bar {
   display: flex;
-  gap: 0.75rem;
-  padding: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
   border: 1px solid var(--cds-border-subtle);
+}
+
+.action-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.action-bar-subtitle {
+  color: var(--cds-text-secondary);
+}
+
+.action-bar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .table-controls-bar {
@@ -425,13 +463,12 @@ const formatDate = (iso) => {
 }
 
 @media (max-width: 480px) {
-  .create-bar {
-    flex-direction: column;
+  .action-bar-buttons {
+    width: 100%;
   }
 
-  .create-bar .cds--btn {
-    width: 100%;
-    max-width: 100%;
+  .action-bar-buttons .cds--btn {
+    flex: 1;
     justify-content: space-between;
   }
 }
