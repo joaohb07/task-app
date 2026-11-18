@@ -2,6 +2,7 @@ const express = require('express')
 const multer = require('multer')
 const sharp = require('sharp')
 const User = require('../models/user')
+const Tag = require('../models/tag')
 const { sendWelcomeEmail, sendFarewellEmail } = require('../emails/account')
 const auth = require('../middlewares/auth')
 
