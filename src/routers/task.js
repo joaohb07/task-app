@@ -10,7 +10,10 @@ const TAG_POPULATE = { path: 'tags', select: 'name color' }
 
 /**
  * Validates that every provided tag ID exists and belongs to the authenticated user.
- * Returns deduplicated ObjectId strings or throws an Error if any tag is invalid/unauthorized.
+ * @param {Array} tagIds - Array of tag ObjectId strings to validate.
+ * @param {mongoose.Types.ObjectId} userId - The ObjectId of the authenticated user.
+ * @returns {Promise<Array>} - Resolves with an array of valid tag ObjectId strings.
+ * @throws {Error} - Throws an error if any tag ID is invalid or does not belong to the user.
  */
 const validateUserTags = async (tagIds, userId) => {
   if (!Array.isArray(tagIds)) {
@@ -37,7 +40,10 @@ const validateUserTags = async (tagIds, userId) => {
   return uniqueIds
 }
 
-// Create task
+/** 
+ * Create a new task,
+ * allows users to create a new task with a description, optional details, due date, and tags.
+ */
 router.post('/tasks', auth, async (req, res) => {
   try {
     let validatedTags = []
@@ -63,8 +69,10 @@ router.post('/tasks', auth, async (req, res) => {
   }
 })
 
-// List tasks with filtering (completed, tag), pagination, and sorting
-// GET /api/tasks?completed=true&tag=<id>&limit=10&skip=0&sortBy=dueDate:asc
+/** 
+ * List tasks with filtering (completed, tag), pagination, and sorting,
+ * allows users to fetch their tasks with optional filters and supports pagination through limit and skip query parameters.
+ */
 router.get('/tasks', auth, async (req, res) => {
   const match = { author: req.user._id }
   const sort = {}
@@ -112,7 +120,10 @@ router.get('/tasks', auth, async (req, res) => {
   }
 })
 
-// Get single task by ID
+/** 
+ * Get single task by ID,
+ * allows users to fetch a specific task by its ID, ensuring it belongs to the authenticated user.
+ */
 router.get('/tasks/:id', auth, async (req, res) => {
   try {
     const task = await Task.findOne({ _id: req.params.id, author: req.user._id }).populate(
@@ -127,7 +138,10 @@ router.get('/tasks/:id', auth, async (req, res) => {
   }
 })
 
-// Update task by ID
+/** 
+ * Update task by ID,
+ * allows users to update a specific task by its ID, ensuring it belongs to the authenticated user.
+ */
 router.patch('/tasks/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body)
   const allowedUpdates = ['description', 'details', 'dueDate', 'completed', 'tags']
@@ -165,7 +179,10 @@ router.patch('/tasks/:id', auth, async (req, res) => {
   }
 })
 
-// Delete task by ID
+/** 
+ * Delete task by ID,
+ * allows users to delete a specific task by its ID, ensuring it belongs to the authenticated user.
+ */
 router.delete('/tasks/:id', auth, async (req, res) => {
   try {
     const task = await Task.findOneAndDelete({ _id: req.params.id, author: req.user._id })

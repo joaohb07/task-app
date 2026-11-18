@@ -1,5 +1,10 @@
 const mongoose = require('mongoose')
 
+/**
+ * Task schema definition for MongoDB using Mongoose.
+ * Each task has a description, optional details, due date, completion status, associated tags, and an author (user).
+ * The schema includes timestamps for creation and last update.
+ */
 const taskSchema = new mongoose.Schema(
   {
     description: {
@@ -39,6 +44,7 @@ const taskSchema = new mongoose.Schema(
   }
 )
 
+// Indexes to optimize queries for tasks by author, completion status, and creation date, as well as by associated tags.
 taskSchema.index({ author: 1, completed: 1, createdAt: -1 })
 taskSchema.index({ author: 1, tags: 1 })
 

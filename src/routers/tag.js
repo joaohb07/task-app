@@ -5,7 +5,10 @@ const auth = require('../middlewares/auth')
 
 const router = new express.Router()
 
-// Create tag
+/** 
+ * Create a new tag,
+ * allows users to create a new tag with a unique name and an optional color.
+ */
 router.post('/tags', auth, async (req, res) => {
   const name = req.body.name?.trim()
   if (!name) {
@@ -35,8 +38,10 @@ router.post('/tags', auth, async (req, res) => {
   }
 })
 
-// List tags with pagination & search
-// GET /api/tags?limit=5&skip=0&search=dev
+/** 
+ * List tags with pagination & search,
+ * allows users to fetch their tags with optional search by name, and supports pagination through limit and skip query parameters.
+ */
 router.get('/tags', auth, async (req, res) => {
   const match = { author: req.user._id }
 
@@ -59,7 +64,10 @@ router.get('/tags', auth, async (req, res) => {
   }
 })
 
-// Update tag by ID
+/** 
+ * Update tag by ID,
+ * allows updating the name and color of a tag, ensuring that the new name is unique for the user and not empty.
+*/
 router.patch('/tags/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body)
   const allowedUpdates = ['name', 'color']
@@ -104,7 +112,11 @@ router.patch('/tags/:id', auth, async (req, res) => {
   }
 })
 
-// Delete tag by ID and detach it from user's tasks
+/** 
+ * Delete tag by ID and detach it from user's tasks,
+ * also removes the tag from any tasks that reference it to maintain data integrity.
+ * This ensures that when a tag is deleted, it does not leave orphaned references in tasks.
+ */
 router.delete('/tags/:id', auth, async (req, res) => {
   try {
     const tag = await Tag.findOneAndDelete({ _id: req.params.id, author: req.user._id })

@@ -5,6 +5,10 @@ const userRouter = require('./routers/user')
 const taskRouter = require('./routers/task')
 const tagRouter = require('./routers/tag')
 
+/**
+ * Main Express application setup for the Task App.
+ * Configures middleware, mounts API routes, and serves the frontend in production.
+ */
 const app = express()
 const clientDistPath = path.join(__dirname, '../client/dist')
 

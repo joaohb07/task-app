@@ -8,7 +8,10 @@ const auth = require('../middlewares/auth')
 
 const router = new express.Router()
 
-// Register a new user
+/** 
+ * Register a new user,
+ * allows users to create a new account with a unique email and a password.
+ */
 router.post('/users', async (req, res) => {
     const user = new User(req.body)
 
@@ -22,7 +25,10 @@ router.post('/users', async (req, res) => {
     }
 })
 
-// Login user
+/** 
+ * Login user,
+ * allows users to authenticate with their email and password.
+ */
 router.post('/users/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password)
@@ -33,7 +39,10 @@ router.post('/users/login', async (req, res) => {
     }
 })
 
-// Logout current session
+/** 
+ * Logout current session,
+ * allows users to logout of their current session.
+ */
 router.post('/users/logout', auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((t) => t.token !== req.token)
@@ -44,7 +53,10 @@ router.post('/users/logout', auth, async (req, res) => {
     }
 })
 
-// Logout all sessions
+/** 
+ * Logout all sessions,
+ * allows users to logout from all active sessions.
+ */
 router.post('/users/logoutAll', auth, async (req, res) => {
     try {
         req.user.tokens = []
@@ -55,12 +67,18 @@ router.post('/users/logoutAll', auth, async (req, res) => {
     }
 })
 
-// Get authenticated user profile
+/** 
+ * Get authenticated user profile,
+ * allows users to fetch their own profile information.
+ */
 router.get('/users/me', auth, async (req, res) => {
     res.send(req.user)
 })
 
-// Update authenticated user profile
+/** 
+ * Update authenticated user profile,
+ * allows users to update their own profile information.
+ */
 router.patch('/users/me', auth, async (req, res) => {
     const updates = Object.keys(req.body)
     const allowedUpdates = ['name', 'password', 'email', 'age']
@@ -81,7 +99,10 @@ router.patch('/users/me', auth, async (req, res) => {
     }
 })
 
-// Delete authenticated user account
+/** 
+ * Delete authenticated user account,
+ * allows users to delete their own account and associated data.
+ */
 router.delete('/users/me', auth, async (req, res) => {
     try {
         const { email, name } = req.user
@@ -93,7 +114,10 @@ router.delete('/users/me', auth, async (req, res) => {
     }
 })
 
-// Multer config for avatar uploads (max 1MB, png/jpg/jpeg)
+/** 
+ * Upload / Update avatar,
+ * allows users to upload or update their avatar image.
+ */
 const upload = multer({
     limits: {
         fileSize: 1000000
@@ -106,6 +130,10 @@ const upload = multer({
     }
 })
 
+/** 
+ * Upload / Update avatar,
+ * allows users to upload or update their avatar image.
+ */
 // Upload / Update avatar
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
     if (!req.file) {
@@ -124,14 +152,20 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
     res.status(400).send({ error: error.message })
 })
 
-// Delete avatar
+/** 
+ * Delete avatar,
+ * allows users to remove their avatar image.
+ */
 router.delete('/users/me/avatar', auth, async (req, res) => {
     req.user.avatar = undefined
     await req.user.save()
     res.send({ message: 'Avatar removed.', hasAvatar: false })
 })
 
-// Fetch avatar binary image (authenticated or by user ID for <img> tags)
+/** 
+ * Fetch avatar binary image,
+ * allows users to view their own avatar image or fetch another user's avatar by ID.
+ */
 router.get('/users/me/avatar', auth, async (req, res) => {
     try {
         if (!req.user.avatar) {
@@ -144,6 +178,10 @@ router.get('/users/me/avatar', auth, async (req, res) => {
     }
 })
 
+/** 
+ * Fetch avatar binary image by user ID,
+ * allows users to fetch another user's avatar by ID.
+ */
 router.get('/users/:id/avatar', async (req, res) => {
     try {
         const user = await User.findById(req.params.id)

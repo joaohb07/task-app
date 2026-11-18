@@ -1,6 +1,16 @@
 const jwt = require('jsonwebtoken')
 const User = require('../models/user')
 
+/**
+ * Middleware function to authenticate requests using JWT.
+ * It checks for the presence of a valid JWT in the Authorization header.
+ * If the token is valid, it attaches the user and token to the request object.
+ * If the token is invalid or missing, it responds with a 401 Unauthorized status.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ */
 const auth = async (req, res, next) => {
     try {
         const authHeader = req.header('Authorization')

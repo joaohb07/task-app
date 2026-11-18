@@ -3,6 +3,10 @@ const app = require('./app')
 
 const port = process.env.PORT || 3000
 
+/**
+ * Start the server after establishing a connection to MongoDB.
+ * If the connection fails, log the error and exit the process.
+ */
 connectDB()
     .then(() => {
         console.log('Connected to MongoDB')

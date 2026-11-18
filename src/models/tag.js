@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 
+// List of allowed colors for tags.
 const ALLOWED_COLORS = [
   'blue',
   'teal',
@@ -11,6 +12,11 @@ const ALLOWED_COLORS = [
   'cool-gray'
 ]
 
+/**
+ * Tag schema definition for MongoDB using Mongoose.
+ * Each tag has a name, color, and an associated author (user).
+ * The schema includes timestamps for creation and last update.
+ */
 const tagSchema = new mongoose.Schema(
   {
     name: {
