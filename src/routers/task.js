@@ -7,6 +7,7 @@ const auth = require('../middlewares/auth')
 const router = new express.Router()
 
 const TAG_POPULATE = { path: 'tags', select: 'name color' }
+const ALLOWED_PRIORITIES = ['none', 'low', 'medium', 'high']
 
 /**
  * Validates that every provided tag ID exists and belongs to the authenticated user.
@@ -42,7 +43,7 @@ const validateUserTags = async (tagIds, userId) => {
 
 /** 
  * Create a new task,
- * allows users to create a new task with a description, optional details, due date, and tags.
+ * allows users to create a new task with a description, optional details, due date, priority, and tags.
  */
 router.post('/tasks', auth, async (req, res) => {
   try {
@@ -55,6 +56,7 @@ router.post('/tasks', auth, async (req, res) => {
       description: req.body.description,
       details: req.body.details ?? '',
       dueDate: req.body.dueDate || null,
+      priority: req.body.priority || 'none',
       completed: Boolean(req.body.completed),
       tags: validatedTags,
       author: req.user._id
@@ -70,7 +72,7 @@ router.post('/tasks', auth, async (req, res) => {
 })
 
 /** 
- * List tasks with filtering (completed, tag), pagination, and sorting,
+ * List tasks with filtering (completed, tag, priority), pagination, and sorting,
  * allows users to fetch their tasks with optional filters and supports pagination through limit and skip query parameters.
  */
 router.get('/tasks', auth, async (req, res) => {
@@ -88,9 +90,20 @@ router.get('/tasks', auth, async (req, res) => {
     match.tags = req.query.tag
   }
 
+  if (req.query.priority) {
+    if (!ALLOWED_PRIORITIES.includes(req.query.priority)) {
+      return res.status(400).send({ error: 'Invalid priority filter.' })
+    }
+    match.priority = req.query.priority
+  }
+
   if (req.query.sortBy) {
     const parts = req.query.sortBy.split(':')
-    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
+    const sortField = parts[0] === 'priority' ? 'priorityOrder' : parts[0]
+    sort[sortField] = parts[1] === 'desc' ? -1 : 1
+    if (sortField === 'priorityOrder') {
+      sort.createdAt = -1
+    }
   } else {
     sort.createdAt = -1
   }
@@ -144,7 +157,7 @@ router.get('/tasks/:id', auth, async (req, res) => {
  */
 router.patch('/tasks/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body)
-  const allowedUpdates = ['description', 'details', 'dueDate', 'completed', 'tags']
+  const allowedUpdates = ['description', 'details', 'dueDate', 'priority', 'completed', 'tags']
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
 
   if (!isValidOperation || updates.length === 0) {

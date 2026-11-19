@@ -13,18 +13,23 @@ import ManageTagsModal from '../components/ManageTagsModal.vue'
 import TaskModal from '../components/TaskModal.vue'
 
 /**
- * Dashboard view logic for managing tasks and tags.
- * This includes fetching tasks, handling modals for creating/editing/viewing tasks,
- * filtering, sorting, and pagination of tasks.
+ * DashboardView.vue
+ *
+ * This component serves as the main dashboard for the task management application.
+ * It displays key performance indicators (KPIs), provides quick actions for managing tasks and tags,
+ * and presents a data table for viewing, filtering, sorting, and paginating tasks.
+ *
+ * The component interacts with the task and tag stores to fetch and manage data.
+ * It also handles modal dialogs for creating, editing, and viewing tasks, as well as managing tags.
  */
 const taskStore = useTaskStore()
 const tagStore = useTagStore()
 
 /**
- * Reactive state for controlling the visibility of modals and the current task being edited/viewed.
+ * Reactive state variables for managing modal visibility and task operations.
  * - isTagsModalOpen: Controls the visibility of the Manage Tags modal.
- * - isTaskModalOpen: Controls the visibility of the Task modal (create/edit/view).
- * - taskModalMode: Indicates the mode of the Task modal ('create', 'edit', or 'view').
+ * - isTaskModalOpen: Controls the visibility of the Task modal.
+ * - taskModalMode: Determines the mode of the Task modal ('create', 'edit', or 'view').
  * - activeTask: Holds the currently selected task for viewing or editing.
  */
 const isTagsModalOpen = ref(false)
@@ -33,8 +38,19 @@ const taskModalMode = ref('create') // 'create' | 'edit' | 'view'
 const activeTask = ref(null)
 
 /**
- * Lifecycle hook to fetch initial data when the component is mounted.
- * Fetches tasks and all tags from the respective stores.
+ * Mapping of task priority levels to their corresponding display labels.
+ * This is used to render user-friendly priority labels in the task table.
+ */
+const priorityLabelMap = {
+  none: 'None',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High'
+}
+
+/**
+ * Lifecycle hook that runs when the component is mounted.
+ * It fetches the initial list of tasks and all available tags from the respective stores.
  */
 onMounted(() => {
   taskStore.fetchTasks()
@@ -42,14 +58,14 @@ onMounted(() => {
 })
 
 /**
- * Computed property to calculate the total number of pages based on the total tasks and the limit per page.
- * Ensures that there is at least one page even if there are no tasks.
+ * Computed property that calculates the total number of pages based on the total tasks and the limit per page.
+ * Ensures that there is always at least one page, even if there are no tasks.
  */
 const totalPages = computed(() => Math.max(1, Math.ceil(taskStore.total / taskStore.limit)))
 
 /**
- * Opens the Task modal in 'create' mode for adding a new task.
- * Resets the activeTask to null and sets the modal mode to 'create'.
+ * Opens the Task modal in 'create' mode, allowing the user to create a new task.
+ * Resets the activeTask to null to ensure a fresh form.
  */
 const openCreateTask = () => {
   activeTask.value = null
@@ -58,8 +74,8 @@ const openCreateTask = () => {
 }
 
 /**
- * Opens the Task modal in 'view' mode for viewing the details of a selected task.
- * Sets the activeTask to the selected task and sets the modal mode to 'view'.
+ * Opens the Task modal in 'view' mode for the specified task.
+ * Sets the activeTask to the selected task for viewing its details.
  * @param {Object} task - The task object to view.
  */
 const openViewTask = (task) => {
@@ -69,8 +85,8 @@ const openViewTask = (task) => {
 }
 
 /**
- * Opens the Task modal in 'edit' mode for editing an existing task.
- * Sets the activeTask to the selected task and sets the modal mode to 'edit'.
+ * Opens the Task modal in 'edit' mode for the specified task.
+ * Sets the activeTask to the selected task for editing its details.
  * @param {Object} task - The task object to edit.
  */
 const openEditTask = (task) => {
@@ -80,9 +96,9 @@ const openEditTask = (task) => {
 }
 
 /**
- * Handles the event when tags are changed in the Manage Tags modal.
- * Fetches all tags again and checks if the currently selected tag is still valid.
- * If the selected tag no longer exists, it resets the selected tag and fetches tasks again.
+ * Handles changes to the tags by fetching the updated list of tags from the tag store.
+ * If the currently selected tag is no longer available, it resets the selected tag filter.
+ * Finally, it fetches the tasks again to reflect any changes in the task list.
  */
 const handleTagsChanged = () => {
   tagStore.fetchAllTags()
@@ -97,7 +113,7 @@ const handleTagsChanged = () => {
 
 /**
  * Sets the current task filter (all, pending, completed) and resets the page to 1.
- * Fetches tasks based on the new filter.
+ * Fetches the tasks again to reflect the new filter.
  * @param {string} filter - The filter to apply ('all', 'pending', 'completed').
  */
 const setFilter = (filter) => {
@@ -107,9 +123,9 @@ const setFilter = (filter) => {
 }
 
 /**
- * Changes the selected tag filter for tasks and resets the page to 1.
- * Fetches tasks based on the new selected tag.
- * @param {Event} e - The change event from the tag select input.
+ * Changes the tag filter and resets the page to 1.
+ * Fetches the tasks again to reflect the new filter.
+ * @param {Object} e - The event object from the select element.
  */
 const changeTagFilter = (e) => {
   taskStore.selectedTag = e.target.value
@@ -118,9 +134,20 @@ const changeTagFilter = (e) => {
 }
 
 /**
- * Changes the sorting criteria for tasks and resets the page to 1.
- * Fetches tasks based on the new sorting criteria.
- * @param {Event} e - The change event from the sort select input.
+ * Changes the priority filter and resets the page to 1.
+ * Fetches the tasks again to reflect the new filter.
+ * @param {Object} e - The event object from the select element.
+ */
+const changePriorityFilter = (e) => {
+  taskStore.selectedPriority = e.target.value
+  taskStore.page = 1
+  taskStore.fetchTasks()
+}
+
+/**
+ * Changes the sort order and resets the page to 1.
+ * Fetches the tasks again to reflect the new sort order.
+ * @param {Object} e - The event object from the select element.
  */
 const changeSort = (e) => {
   taskStore.sortBy = e.target.value
@@ -129,9 +156,10 @@ const changeSort = (e) => {
 }
 
 /**
- * Changes the current page of tasks by a given delta (e.g., -1 for previous, +1 for next).
- * Ensures that the new page number is within valid bounds before updating and fetching tasks.
- * @param {number} delta - The change in page number (negative for previous, positive for next).
+ * Changes the current page by a specified delta (e.g., -1 for previous, +1 for next).
+ * Ensures that the new page number is within valid bounds before updating.
+ * Fetches the tasks again to reflect the new page.
+ * @param {number} delta - The change in page number (positive or negative).
  */
 const changePage = (delta) => {
   const next = taskStore.page + delta
@@ -143,10 +171,11 @@ const changePage = (delta) => {
 
 /**
  * Formats an ISO date string into a human-readable format (e.g., "Jan 1, 2024").
+ * If the input is invalid or null, it returns a placeholder '—'.
  * Optionally formats the date in UTC if specified.
  * @param {string} iso - The ISO date string to format.
  * @param {boolean} useUtc - Whether to format the date in UTC (default: false).
- * @returns {string} - The formatted date string or '—' if the input is invalid.
+ * @returns {string} - The formatted date string or '—' if input is invalid.
  */
 const formatDate = (iso, useUtc = false) => {
   if (!iso) return '—'
@@ -160,7 +189,7 @@ const formatDate = (iso, useUtc = false) => {
 
 /**
  * Determines if a task is overdue based on its due date and completion status.
- * A task is considered overdue if it has a due date in the past and is not completed.
+ * A task is considered overdue if it has a due date that is before today's date and is not completed.
  * @param {Object} task - The task object to check.
  * @returns {boolean} - True if the task is overdue, false otherwise.
  */
@@ -246,7 +275,7 @@ const isOverdue = (task) => {
         </div>
       </div>
 
-      <!-- Table Toolbar (Status Filters + Tag Filter + Sorting) -->
+      <!-- Table Toolbar (Status Filters + Priority Filter + Tag Filter + Sorting) -->
       <div class="table-controls-bar">
         <div class="filter-tabs">
           <button
@@ -277,6 +306,22 @@ const isOverdue = (task) => {
 
         <div class="toolbar-selects">
           <div class="sort-box">
+            <label for="priority-filter-select" class="sort-label">Priority:</label>
+            <select
+              id="priority-filter-select"
+              :value="taskStore.selectedPriority"
+              class="cds--select-input cds--select-input--sm sort-select"
+              @change="changePriorityFilter"
+            >
+              <option value="">All priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+
+          <div class="sort-box">
             <label for="tag-filter-select" class="sort-label">Tag:</label>
             <select
               id="tag-filter-select"
@@ -301,6 +346,8 @@ const isOverdue = (task) => {
             >
               <option value="createdAt:desc">Newest first</option>
               <option value="createdAt:asc">Oldest first</option>
+              <option value="priority:desc">Priority (high → low)</option>
+              <option value="priority:asc">Priority (low → high)</option>
               <option value="dueDate:asc">Due date (earliest)</option>
               <option value="dueDate:desc">Due date (latest)</option>
               <option value="completed:asc">Pending first</option>
@@ -317,18 +364,19 @@ const isOverdue = (task) => {
             <tr>
               <th style="width: 56px">Done</th>
               <th>Task</th>
-              <th style="width: 220px">Tags</th>
-              <th style="width: 135px">Due Date</th>
-              <th style="width: 120px">Status</th>
+              <th style="width: 110px">Priority</th>
+              <th style="width: 210px">Tags</th>
+              <th style="width: 130px">Due Date</th>
+              <th style="width: 115px">Status</th>
               <th style="width: 130px; text-align: right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="taskStore.loading">
-              <td colspan="6" class="empty-cell">Loading tasks...</td>
+              <td colspan="7" class="empty-cell">Loading tasks...</td>
             </tr>
             <tr v-else-if="taskStore.items.length === 0">
-              <td colspan="6" class="empty-cell">
+              <td colspan="7" class="empty-cell">
                 No tasks found for the current filter. Create one above!
               </td>
             </tr>
@@ -354,6 +402,16 @@ const isOverdue = (task) => {
                 <p v-if="task.details" class="task-details-preview">
                   {{ task.details }}
                 </p>
+              </td>
+              <td>
+                <span
+                  class="cds--tag cds--tag--sm priority-pill"
+                  :class="`priority-pill--${task.priority || 'none'}`"
+                >
+                  <span class="cds--tag__label">
+                    {{ priorityLabelMap[task.priority || 'none'] }}
+                  </span>
+                </span>
               </td>
               <td>
                 <div v-if="task.tags && task.tags.length > 0" class="row-tags-wrap">
@@ -537,7 +595,7 @@ const isOverdue = (task) => {
 
 .sort-select {
   width: auto;
-  min-width: 145px;
+  min-width: 140px;
 }
 
 .table-scroll-wrapper {
@@ -577,10 +635,32 @@ const isOverdue = (task) => {
   font-size: 0.75rem;
   color: var(--cds-text-secondary);
   margin-top: 0.15rem;
-  max-width: 340px;
+  max-width: 320px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Priority Color Tokens: Branco / Amarelo / Laranja / Vermelho */
+.priority-pill--none {
+  background-color: #ffffff;
+  color: #161616;
+  border: 1px solid #8d8d8d;
+}
+
+.priority-pill--low {
+  background-color: #f1c21b;
+  color: #161616;
+}
+
+.priority-pill--medium {
+  background-color: #ff832b;
+  color: #161616;
+}
+
+.priority-pill--high {
+  background-color: #da1e28;
+  color: #ffffff;
 }
 
 .row-tags-wrap {

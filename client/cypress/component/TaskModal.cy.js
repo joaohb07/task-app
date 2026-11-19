@@ -13,6 +13,7 @@ describe('TaskModal Component', () => {
     description: 'Implement Carbon Design modals',
     details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
     dueDate: '2026-12-15T00:00:00.000Z',
+    priority: 'high',
     completed: false,
     tags: [sampleTags[0], sampleTags[2]]
   }
@@ -35,7 +36,7 @@ describe('TaskModal Component', () => {
     cy.get('[role="dialog"]').should('not.exist')
   })
 
-  it('renders create mode, selects tags, emits open-tags, and submits new task payload', () => {
+  it('renders create mode, selects priority and tags, emits open-tags, and submits new task payload', () => {
     const onCloseSpy = cy.spy().as('onCloseSpy')
     const onOpenTagsSpy = cy.spy().as('onOpenTagsSpy')
 
@@ -44,6 +45,7 @@ describe('TaskModal Component', () => {
         description: 'Setup CI/CD pipeline',
         details: 'Run Jest and Cypress before merge.',
         dueDate: '2026-11-30T00:00:00.000Z',
+        priority: 'medium',
         tags: ['tag-2']
       })
       req.reply({
@@ -70,25 +72,23 @@ describe('TaskModal Component', () => {
 
     cy.contains('#task-modal-title', 'New Task').should('be.visible')
 
-    // Click "+ Manage Tags" button and assert event emission
     cy.contains('.manage-inline-btn', '+ Manage Tags').click()
     cy.get('@onOpenTagsSpy').should('have.been.calledOnce')
 
-    // Fill form inputs and toggle tag selection
     cy.get('#task-desc-input').type('  Setup CI/CD pipeline  ')
     cy.get('#task-details-input').type('Run Jest and Cypress before merge.')
+    cy.get('#task-priority-select').select('medium')
     cy.get('#task-due-input').type('2026-11-30')
 
     cy.contains('.tag-option-pill', 'Testing').click()
     cy.contains('.tag-option-pill', 'Testing').should('have.class', 'is-selected')
 
-    // Submit form
     cy.contains('.cds--modal-footer button', 'Create Task').click()
     cy.wait('@createTask')
     cy.get('@onCloseSpy').should('have.been.calledOnce')
   })
 
-  it('renders read-only view mode and switches to edit mode when Edit Task is clicked', () => {
+  it('renders read-only view mode with priority pill and switches to edit mode when Edit Task is clicked', () => {
     const onUpdateModeSpy = cy.spy().as('onUpdateModeSpy')
 
     cy.mountWithPlugins(TaskModal, {
@@ -103,18 +103,18 @@ describe('TaskModal Component', () => {
     cy.wait('@fetchAllTags')
 
     cy.contains('#task-modal-title', 'Task Details').should('be.visible')
+    cy.contains('.priority-pill', 'Priority: High').should('be.visible')
     cy.contains('.view-title-text', 'Implement Carbon Design modals').should('be.visible')
     cy.contains('.view-details-text', 'Create TaskModal and ManageTagsModal with full CRUD support.').should('be.visible')
     cy.contains('.view-date-badge', 'Dec 15, 2026').should('be.visible')
     cy.contains('.tags-list .cds--tag', 'Backend').should('be.visible')
     cy.contains('.tags-list .cds--tag', 'Frontend').should('be.visible')
 
-    // Click Edit Task in footer
     cy.contains('.cds--modal-footer button', 'Edit Task').click()
     cy.get('@onUpdateModeSpy').should('have.been.calledOnceWith', 'edit')
   })
 
-  it('pre-populates fields in edit mode and submits updated task with completion status', () => {
+  it('pre-populates fields in edit mode and submits updated task with priority and completion status', () => {
     const onCloseSpy = cy.spy().as('onCloseSpy')
 
     cy.intercept('PATCH', '**/api/tasks/task-101', (req) => {
@@ -122,6 +122,7 @@ describe('TaskModal Component', () => {
         description: 'Implement Carbon Design modals v2',
         details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
         dueDate: '2026-12-15T00:00:00.000Z',
+        priority: 'low',
         tags: ['tag-1'],
         completed: true
       })
@@ -149,9 +150,10 @@ describe('TaskModal Component', () => {
 
     cy.contains('#task-modal-title', 'Edit Task').should('be.visible')
     cy.get('#task-desc-input').should('have.value', 'Implement Carbon Design modals')
+    cy.get('#task-priority-select').should('have.value', 'high')
     cy.get('#task-due-input').should('have.value', '2026-12-15')
 
-    // Unselect Frontend tag, update title, and mark task as completed
+    cy.get('#task-priority-select').select('low')
     cy.contains('.tag-option-pill', 'Frontend').click()
     cy.get('#task-desc-input').clear().type('Implement Carbon Design modals v2')
     cy.get('.status-toggle-box input[type="checkbox"]').check()
