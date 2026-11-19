@@ -8,10 +8,15 @@ import Checkmark from '@carbon/icons-vue/es/checkmark/16'
 import Calendar from '@carbon/icons-vue/es/calendar/16'
 
 /**
- * Props definition for the TaskModal component.
+ * Props:
  * - open: Boolean indicating if the modal is open.
- * - mode: String indicating the mode of the modal ('create', 'edit', 'view').
- * - task: Object representing the task to be viewed or edited.
+ * - mode: String indicating the modal mode ('create', 'edit', 'view').
+ * - task: Object representing the task to edit or view (optional).
+ *
+ * Emits:
+ * - close: Emitted when the modal should be closed.
+ * - update:mode: Emitted to change the modal mode (e.g., from 'view' to 'edit').
+ * - open-tags: Emitted to open the tag management interface.
  */
 const props = defineProps({
   open: {
@@ -28,38 +33,55 @@ const props = defineProps({
   }
 })
 
-/**
- * Emits definition for the TaskModal component.
- * - close: Event emitted when the modal is closed.
- * - update:mode: Event emitted to update the mode of the modal.
- * - open-tags: Event emitted to open the tag management modal.
- */
 const emit = defineEmits(['close', 'update:mode', 'open-tags'])
 
 const taskStore = useTaskStore()
 const tagStore = useTagStore()
 
 /**
- * Reactive references for form fields and state.
+ * Reactive state variables for the task form.
  * - description: The task title.
- * - details: Additional details or notes for the task.
- * - dueDate: The due date for the task in YYYY-MM-DD format.
+ * - details: Additional notes or details for the task.
+ * - dueDate: The due date in 'YYYY-MM-DD' format.
+ * - priority: The task priority ('none', 'low', 'medium', 'high').
  * - selectedTagIds: Array of selected tag IDs for the task.
- * - completed: Boolean indicating if the task is completed (only relevant in edit mode).
+ * - completed: Boolean indicating if the task is completed (only for edit mode).
  * - submitting: Boolean indicating if the form submission is in progress.
  */
 const description = ref('')
 const details = ref('')
 const dueDate = ref('')
+const priority = ref('none')
 const selectedTagIds = ref([])
 const completed = ref(false)
 const submitting = ref(false)
 
 /**
- * Computed properties for the component.
- * - availableTags: List of all available tags from the tag store.
- * - isReadOnly: Boolean indicating if the modal is in view mode (read-only).
- * - modalHeading: The heading text for the modal based on the mode.
+ * Priority options for the task form.
+ * Each option has a value and a label for display.
+ */
+const priorityOptions = [
+  { value: 'none', label: 'None' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' }
+]
+
+/**
+ * Mapping of priority values to display labels for the view mode.
+ */
+const priorityLabelMap = {
+  none: 'None',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High'
+}
+
+/**
+ * Computed properties for the modal.
+ * - availableTags: List of all tags from the tag store.
+ * - isReadOnly: Boolean indicating if the modal is in view mode.
+ * - modalHeading: The heading text based on the modal mode.
  * - modalLabel: The label text for the modal based on the mode.
  */
 const availableTags = computed(() => tagStore.allTags || [])
@@ -78,7 +100,7 @@ const modalLabel = computed(() => {
 })
 
 /**
- * Converts an ISO date string to a format suitable for the input[type="date"] field (YYYY-MM-DD).
+ * Converts an ISO date string to 'YYYY-MM-DD' format for input fields.
  * @param {string} isoString - The ISO date string to convert.
  * @returns {string} - The formatted date string or an empty string if input is invalid.
  */
@@ -88,7 +110,7 @@ const toInputDate = (isoString) => {
 }
 
 /**
- * Formats an ISO date string for display in the UI.
+ * Formats an ISO date string for display in the view mode.
  * @param {string} isoString - The ISO date string to format.
  * @returns {string} - The formatted date string or 'No due date' if input is invalid.
  */
@@ -104,8 +126,8 @@ const formatDisplayDate = (isoString) => {
 }
 
 /**
- * Synchronizes the form fields with the props.task data when the modal is opened or when the task changes.
- * Resets the form fields to default values if no task is provided or if the mode is 'create'.
+ * Synchronizes the form fields with the provided task prop when in edit or view mode.
+ * Resets the form fields to default values when creating a new task.
  */
 const syncFormFromProps = () => {
   taskStore.error = null
@@ -113,6 +135,7 @@ const syncFormFromProps = () => {
     description.value = props.task.description || ''
     details.value = props.task.details || ''
     dueDate.value = toInputDate(props.task.dueDate)
+    priority.value = props.task.priority || 'none'
     selectedTagIds.value = (props.task.tags || []).map((t) =>
       typeof t === 'object' ? t._id : t
     )
@@ -121,14 +144,15 @@ const syncFormFromProps = () => {
     description.value = ''
     details.value = ''
     dueDate.value = ''
+    priority.value = 'none'
     selectedTagIds.value = []
     completed.value = false
   }
 }
 
 /**
- * Watch for changes to the 'open' prop.
- * When the modal is opened, fetch all tags from the tag store.
+ * Watches for changes in the 'open' prop to fetch all tags when the modal is opened.
+ * This ensures that the tag list is up-to-date whenever the modal is displayed.
  */
 watch(
   () => props.open,
@@ -141,8 +165,8 @@ watch(
 )
 
 /**
- * Watch for changes to the 'open', 'mode', and 'task' props.
- * When the modal is opened, synchronize the form fields with the task data.
+ * Watches for changes in the 'open', 'mode', and 'task' props to synchronize the form fields.
+ * When the modal is opened, it populates the form with the task data if in edit or view mode.
  */
 watch(
   () => [props.open, props.mode, props.task],
@@ -156,7 +180,9 @@ watch(
 
 /**
  * Toggles the selection of a tag by its ID.
- * If the tag is already selected, it will be deselected; otherwise, it will be added to the selection.
+ * If the tag is already selected, it will be removed from the selection.
+ * If the tag is not selected, it will be added to the selection.
+ * This function does nothing if the modal is in read-only mode.
  * @param {string} tagId - The ID of the tag to toggle.
  */
 const toggleTagSelection = (tagId) => {
@@ -170,8 +196,8 @@ const toggleTagSelection = (tagId) => {
 
 /**
  * Handles the form submission for creating or updating a task.
- * Validates the input, constructs the payload, and calls the appropriate store method.
- * Closes the modal on successful submission.
+ * Validates the input, constructs the payload, and calls the appropriate store action.
+ * On success, emits the 'close' event to close the modal.
  */
 const handleSubmit = async () => {
   const trimmedDesc = description.value.trim()
@@ -182,6 +208,7 @@ const handleSubmit = async () => {
     description: trimmedDesc,
     details: details.value.trim(),
     dueDate: dueDate.value ? new Date(`${dueDate.value}T00:00:00.000Z`).toISOString() : null,
+    priority: priority.value,
     tags: selectedTagIds.value
   }
 
@@ -230,12 +257,22 @@ const handleSubmit = async () => {
         <!-- VIEW MODE -->
         <div v-if="isReadOnly && task" class="view-container">
           <div class="view-status-row">
-            <span
-              class="cds--tag cds--tag--sm"
-              :class="task.completed ? 'cds--tag--green' : 'cds--tag--warm-gray'"
-            >
-              <span class="cds--tag__label">{{ task.completed ? 'Completed' : 'Pending' }}</span>
-            </span>
+            <div class="view-badges-group">
+              <span
+                class="cds--tag cds--tag--sm"
+                :class="task.completed ? 'cds--tag--green' : 'cds--tag--warm-gray'"
+              >
+                <span class="cds--tag__label">{{ task.completed ? 'Completed' : 'Pending' }}</span>
+              </span>
+              <span
+                class="cds--tag cds--tag--sm priority-pill"
+                :class="`priority-pill--${task.priority || 'none'}`"
+              >
+                <span class="cds--tag__label">
+                  Priority: {{ priorityLabelMap[task.priority || 'none'] }}
+                </span>
+              </span>
+            </div>
             <span class="view-date-badge">
               <Calendar />
               <span>Due: {{ formatDisplayDate(task.dueDate) }}</span>
@@ -299,6 +336,19 @@ const handleSubmit = async () => {
 
           <div class="form-row-split">
             <div class="cds--form-item">
+              <label for="task-priority-select" class="cds--label">Priority</label>
+              <select
+                id="task-priority-select"
+                v-model="priority"
+                class="cds--select-input"
+              >
+                <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="cds--form-item">
               <label for="task-due-input" class="cds--label">Due Date</label>
               <input
                 id="task-due-input"
@@ -307,14 +357,13 @@ const handleSubmit = async () => {
                 class="cds--text-input"
               />
             </div>
+          </div>
 
-            <div v-if="mode === 'edit'" class="cds--form-item status-toggle-box">
-              <label class="cds--label">Status</label>
-              <label class="checkbox-inline">
-                <input v-model="completed" type="checkbox" class="task-checkbox" />
-                <span>Mark as completed</span>
-              </label>
-            </div>
+          <div v-if="mode === 'edit'" class="cds--form-item status-toggle-box">
+            <label class="checkbox-inline">
+              <input v-model="completed" type="checkbox" class="task-checkbox" />
+              <span>Mark as completed</span>
+            </label>
           </div>
 
           <div class="cds--form-item">
@@ -409,7 +458,8 @@ const handleSubmit = async () => {
 }
 
 .task-form .cds--text-input,
-.task-form .cds--text-area {
+.task-form .cds--text-area,
+.task-form .cds--select-input {
   width: 100%;
   max-width: 100%;
 }
@@ -429,7 +479,6 @@ const handleSubmit = async () => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  height: 40px;
   font-size: 0.875rem;
   cursor: pointer;
 }
@@ -497,6 +546,35 @@ const handleSubmit = async () => {
   gap: 0.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.view-badges-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Priority Color Tokens: White / Yellow / Orange / Red */
+.priority-pill--none {
+  background-color: #ffffff;
+  color: #161616;
+  border: 1px solid #8d8d8d;
+}
+
+.priority-pill--low {
+  background-color: #f1c21b;
+  color: #161616;
+}
+
+.priority-pill--medium {
+  background-color: #ff832b;
+  color: #161616;
+}
+
+.priority-pill--high {
+  background-color: #da1e28;
+  color: #ffffff;
 }
 
 .view-date-badge {

@@ -7,17 +7,8 @@ import api from '../api/client'
  */
 export const useTaskStore = defineStore('tasks', {
   /**
-   * State properties for the tasks store.
-   * - items: The current page of tasks.
-   * - total: Total number of tasks.
-   * - stats: Statistics about tasks (total, completed, pending).
-   * - filter: Current filter for tasks ('all', 'pending', 'completed').
-   * - selectedTag: ID of the selected tag for filtering tasks.
-   * - sortBy: Sorting criteria for tasks (e.g., 'createdAt:desc').
-   * - page: Current page number for pagination.
-   * - limit: Number of tasks per page.
-   * - loading: A boolean indicating whether a task-related operation is in progress.
-   * - error: An error message string for any task-related errors, or null if no error.
+   * State of the tasks store.
+   * Includes task items, total count, statistics, filters, sorting, pagination, loading status, and error messages.
    */
   state: () => ({
     items: [],
@@ -29,6 +20,7 @@ export const useTaskStore = defineStore('tasks', {
     },
     filter: 'all', // 'all' | 'pending' | 'completed'
     selectedTag: '', // '' | tagId
+    selectedPriority: '', // '' | 'none' | 'low' | 'medium' | 'high'
     sortBy: 'createdAt:desc',
     page: 1,
     limit: 8,
@@ -37,14 +29,13 @@ export const useTaskStore = defineStore('tasks', {
   }),
 
   /**
-   * Actions for managing tasks state.
-   * Includes methods for fetching tasks, creating, updating, toggling completion, and deleting tasks.
+   * Getters for the tasks store.
+   * Provides computed properties for filtered and sorted tasks, total pages, and current page items.
    */
   actions: {
     /**
-     * Fetches a paginated list of tasks from the server based on the current filter, selected tag, and sorting criteria.
-     * Updates the items, total, and stats state properties with the fetched data.
-     * Handles loading and error states during the fetch operation.
+     * Fetch tasks from the API with current filters, sorting, and pagination.
+     * Updates the store state with fetched tasks, total count, and statistics.
      */
     async fetchTasks() {
       this.loading = true
@@ -58,6 +49,7 @@ export const useTaskStore = defineStore('tasks', {
         if (this.filter === 'completed') params.completed = 'true'
         if (this.filter === 'pending') params.completed = 'false'
         if (this.selectedTag) params.tag = this.selectedTag
+        if (this.selectedPriority) params.priority = this.selectedPriority
 
         const { data } = await api.get('/tasks', { params })
         this.items = data.tasks
@@ -73,11 +65,11 @@ export const useTaskStore = defineStore('tasks', {
     },
 
     /**
-     * Creates a new task on the server with the provided payload.
-     * On success, resets the page to 1 and fetches the updated list of tasks.
-     * Handles error state during the create operation.
-     * @param {Object} payload - The data for the new task (e.g., title, description, dueDate, tags).
-     * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * Create a new task with the provided payload.
+     * On success, resets to the first page and fetches updated tasks.
+     * Returns true on success, false on failure with error message set in state.
+     * @param {Object} payload - The task data to create.
+     * @returns {Promise<boolean>} - True if creation was successful, false otherwise.
      */
     async createTask(payload) {
       this.error = null
@@ -93,12 +85,12 @@ export const useTaskStore = defineStore('tasks', {
     },
 
     /**
-     * Updates an existing task on the server with the provided payload.
-     * On success, fetches the updated list of tasks.
-     * Handles error state during the update operation.
+     * Update an existing task by ID with the provided payload.
+     * On success, fetches updated tasks.
+     * Returns true on success, false on failure with error message set in state.
      * @param {string} id - The ID of the task to update.
-     * @param {Object} payload - The updated data for the task (e.g., title, description, dueDate, tags).
-     * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * @param {Object} payload - The updated task data.
+     * @returns {Promise<boolean>} - True if update was successful, false otherwise.
      */
     async updateTask(id, payload) {
       this.error = null
@@ -113,7 +105,7 @@ export const useTaskStore = defineStore('tasks', {
     },
 
     /**
-     * Toggles the completion status of a task.
+     * Toggle the completion status of a task.
      * Calls updateTask with the opposite of the current completed status.
      * @param {Object} task - The task object to toggle.
      */
@@ -122,11 +114,10 @@ export const useTaskStore = defineStore('tasks', {
     },
 
     /**
-     * Deletes a task from the server by its ID.
-     * On success, adjusts the current page if necessary and fetches the updated list of tasks.
-     * Handles error state during the delete operation.
+     * Delete a task by ID.
+     * On success, adjusts the current page if necessary and fetches updated tasks.
+     * Sets error message in state on failure.
      * @param {string} id - The ID of the task to delete.
-     * @returns {Promise<void>}
      */
     async deleteTask(id) {
       this.error = null
