@@ -8,17 +8,34 @@ import WarningFilled from '@carbon/icons-vue/es/warning--filled/16'
 const router = useRouter()
 const auth = useAuthStore()
 
+/**
+ * Reactive state variables for the authentication form.
+ * - isRegister: Boolean indicating whether the form is in registration mode.
+ * - name: User's full name (used only in registration).
+ * - email: User's email address.
+ * - password: User's password.
+ * - age: User's age (optional, used only in registration).
+ */
 const isRegister = ref(false)
 const name = ref('')
 const email = ref('')
 const password = ref('')
 const age = ref('')
 
+/**
+ * Toggles the authentication form between login and registration modes.
+ * Resets any existing authentication errors when switching modes.
+ */
 const toggleMode = () => {
   isRegister.value = !isRegister.value
   auth.error = null
 }
 
+/**
+ * Handles the form submission for both login and registration.
+ * Calls the appropriate method from the auth store based on the current mode.
+ * On successful authentication, navigates to the dashboard.
+ */
 const handleSubmit = async () => {
   let success = false
   if (isRegister.value) {
@@ -73,7 +90,7 @@ const handleSubmit = async () => {
             v-model="name"
             type="text"
             required
-            placeholder="João Botelho"
+            placeholder="Jhon Doe"
             class="cds--text-input"
           />
         </div>

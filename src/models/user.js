@@ -3,7 +3,14 @@ const validator = require('validator')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const Task = require('./task')
+const Tag = require('./tag')
 
+/** 
+ * User model schema for MongoDB using Mongoose.
+ * Includes fields for name, email, password, age, avatar, and authentication tokens.
+ * Provides methods for generating JWT tokens, finding users by credentials,
+ * and middleware for hashing passwords and cascading deletes of related tasks and tags.
+ */
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -55,6 +62,7 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 })
 
+// Virtual property to establish a relationship between users and their tasks.
 userSchema.virtual('userTasks', {
     ref: 'Task',
     localField: '_id',
@@ -73,7 +81,7 @@ userSchema.methods.toJSON = function () {
 
     return userObject
 }
-
+// Generate a JWT token for the user and save it to the tokens array
 userSchema.methods.genToken = async function () {
     const user = this
     const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET)
@@ -84,6 +92,7 @@ userSchema.methods.genToken = async function () {
     return token
 }
 
+// Static method to find a user by email and password for authentication
 userSchema.statics.findByCredentials = async (email, password) => {
     const user = await User.findOne({ email: email.toLowerCase().trim() })
     if (!user) {
@@ -111,6 +120,7 @@ userSchema.pre('save', async function (next) {
 userSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
     const user = this
     await Task.deleteMany({ author: user._id })
+    await Tag.deleteMany({ author: user._id })
     next()
 })
 

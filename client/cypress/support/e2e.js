@@ -1,4 +1,9 @@
-// Custom helper to seed an authenticated session in localStorage before visiting protected routes
+/**
+ * Logs in the user with a fake session stored in localStorage.
+ * This allows testing protected routes without going through the actual login process.
+ *
+ * @param {Object} userOverride - Optional override for the default user object.
+ */
 Cypress.Commands.add('loginWithSession', (userOverride = {}) => {
   const user = {
     _id: '673a00000000000000000001',

@@ -1,11 +1,15 @@
 const nodemailer = require('nodemailer')
 
+/**
+ * Returns the email address to be used as the sender.
+ * @returns {string} The sender email address.
+ */
 const getSenderEmail = () =>
     process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@taskapp.local'
 
 /**
  * Creates a configured Nodemailer transporter using environment SMTP credentials.
- * Returns null if SMTP_HOST / SMTP_USER / SMTP_PASS are not configured.
+ * @returns {nodemailer.Transporter|null} A Nodemailer transporter or null if credentials are missing.
  */
 const createTransporter = () => {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env
@@ -33,6 +37,7 @@ const createTransporter = () => {
  *
  * @param {string} email - Recipient email address.
  * @param {string} name - Recipient display name.
+ * @returns {Promise<void>} Resolves once the email is sent or skipped.
  */
 const sendWelcomeEmail = async (email, name) => {
     const transporter = createTransporter()
@@ -56,6 +61,7 @@ const sendWelcomeEmail = async (email, name) => {
  *
  * @param {string} email - Recipient email address.
  * @param {string} name - Recipient display name.
+ * @returns {Promise<void>} Resolves once the email is sent or skipped.
  */
 const sendFarewellEmail = async (email, name) => {
     const transporter = createTransporter()

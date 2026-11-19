@@ -10,6 +10,15 @@ import UserAvatar from '@carbon/icons-vue/es/user--avatar/32'
 const router = useRouter()
 const auth = useAuthStore()
 
+/**
+ * Reactive state variables for the profile form.
+ * - name: User's full name.
+ * - email: User's email address.
+ * - age: User's age (default 0).
+ * - password: New password (optional).
+ * - feedback: Feedback message for successful updates.
+ * - fileInput: Reference to the hidden file input for avatar upload.
+ */
 const name = ref('')
 const email = ref('')
 const age = ref(0)
@@ -17,6 +26,10 @@ const password = ref('')
 const feedback = ref('')
 const fileInput = ref(null)
 
+/**
+ * Fetches the user's profile information on component mount.
+ * Populates the form fields with the current user data if available.
+ */
 onMounted(async () => {
   await auth.fetchProfile()
   if (auth.user) {
@@ -26,6 +39,10 @@ onMounted(async () => {
   }
 })
 
+/**
+ * Handles the profile update form submission.
+ * Sends updated user information to the server and provides feedback on success.
+ */
 const handleUpdate = async () => {
   feedback.value = ''
   const updates = {
@@ -44,6 +61,12 @@ const handleUpdate = async () => {
   }
 }
 
+/**
+ * Handles the avatar file input change event.
+ * Uploads the selected image file as the user's new avatar.
+ * Provides feedback on success or error.
+ * @param {Event} event - The change event from the file input.
+ */
 const handleFileChange = async (event) => {
   const file = event.target.files?.[0]
   if (!file) return
@@ -55,11 +78,18 @@ const handleFileChange = async (event) => {
   }
 }
 
+/**
+ * Logs the user out from all devices and redirects to the login page.
+ */
 const handleLogoutAll = async () => {
   await auth.logout(true)
   router.push('/login')
 }
 
+/**
+ * Deletes the user's account after confirmation and redirects to the login page.
+ * Prompts the user for confirmation before proceeding with the deletion.
+ */
 const handleDeleteAccount = async () => {
   if (!window.confirm('Are you sure you want to permanently delete your account and all tasks?')) {
     return

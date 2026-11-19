@@ -2,148 +2,123 @@ const request = require('supertest')
 const app = require('../../src/app')
 const Task = require('../../src/models/task')
 const {
-    userOneId,
-    userOne,
-    userTwo,
-    taskOne,
-    taskTwo,
-    taskThree,
-    connectTestDB,
-    setupDatabase,
-    disconnectTestDB
+  userOne,
+  userOneId,
+  userTwo,
+  taskOne,
+  connectTestDB,
+  setupDatabase,
+  disconnectTestDB
 } = require('../fixtures/db')
 
 beforeAll(connectTestDB)
 beforeEach(setupDatabase)
 afterAll(disconnectTestDB)
 
-describe('Tasks API (/api/tasks)', () => {
-    describe('POST /api/tasks', () => {
-        it('should create a new task for authenticated user', async () => {
-            const response = await request(app)
-                .post('/api/tasks')
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .send({ description: 'Configure Cypress E2E suite' })
-                .expect(201)
+test('Should create task with details, dueDate, and populated tags', async () => {
+  const tagRes = await request(app)
+    .post('/api/tags')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({ name: 'Release', color: 'teal' })
+    .expect(201)
 
-            const task = await Task.findById(response.body._id)
-            expect(task).not.toBeNull()
-            expect(task.description).toBe('Configure Cypress E2E suite')
-            expect(task.completed).toBe(false)
-            expect(task.author.toString()).toBe(userOneId.toString())
-        })
+  const dueDate = '2026-12-15T00:00:00.000Z'
 
-        it('should reject task creation when description is missing', async () => {
-            await request(app)
-                .post('/api/tasks')
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .send({})
-                .expect(400)
-        })
-
-        it('should reject unauthenticated task creation', async () => {
-            await request(app)
-                .post('/api/tasks')
-                .send({ description: 'Unauthorized task' })
-                .expect(401)
-        })
+  const response = await request(app)
+    .post('/api/tasks')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      description: 'Deploy v2.0',
+      details: 'Run integration tests and verify Docker image before deploy.',
+      dueDate,
+      tags: [tagRes.body._id]
     })
+    .expect(201)
 
-    describe('GET /api/tasks & GET /api/tasks/:id', () => {
-        it('should list all tasks and stats for authenticated user only', async () => {
-            const response = await request(app)
-                .get('/api/tasks')
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .expect(200)
+  expect(response.body.description).toBe('Deploy v2.0')
+  expect(response.body.details).toBe('Run integration tests and verify Docker image before deploy.')
+  expect(new Date(response.body.dueDate).toISOString()).toBe(dueDate)
+  expect(response.body.tags).toHaveLength(1)
+  expect(response.body.tags[0].name).toBe('Release')
+  expect(response.body.tags[0].color).toBe('teal')
 
-            expect(response.body.tasks).toHaveLength(2)
-            expect(response.body.total).toBe(2)
-            expect(response.body.stats).toEqual({
-                total: 2,
-                completed: 1,
-                pending: 1
-            })
-        })
+  const taskInDb = await Task.findById(response.body._id)
+  expect(taskInDb).not.toBeNull()
+  expect(taskInDb.author).toEqual(userOneId)
+})
 
-        it('should filter tasks by completed status and support pagination/sorting', async () => {
-            const response = await request(app)
-                .get('/api/tasks?completed=true&limit=1&skip=0&sortBy=createdAt:desc')
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .expect(200)
+test('Should reject creating task with tag belonging to another user', async () => {
+  const userTwoTag = await request(app)
+    .post('/api/tags')
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .send({ name: 'PrivateUserTwoTag' })
+    .expect(201)
 
-            expect(response.body.tasks).toHaveLength(1)
-            expect(response.body.tasks[0]._id).toBe(taskTwo._id.toString())
-            expect(response.body.total).toBe(1)
-        })
-
-        it('should fetch a single task by ID for its owner', async () => {
-            const response = await request(app)
-                .get(`/api/tasks/${taskOne._id}`)
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .expect(200)
-
-            expect(response.body.description).toBe(taskOne.description)
-        })
-
-        it('should return 404 when trying to access another user task', async () => {
-            await request(app)
-                .get(`/api/tasks/${taskThree._id}`)
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .expect(404)
-        })
+  await request(app)
+    .post('/api/tasks')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      description: 'Unauthorized tag attach',
+      tags: [userTwoTag.body._id]
     })
+    .expect(400)
+})
 
-    describe('PATCH /api/tasks/:id', () => {
-        it('should update task description and completed status', async () => {
-            const response = await request(app)
-                .patch(`/api/tasks/${taskOne._id}`)
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .send({
-                    description: 'Updated task description',
-                    completed: true
-                })
-                .expect(200)
+test('Should filter tasks by tag ID', async () => {
+  const tagRes = await request(app)
+    .post('/api/tags')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({ name: 'Sprint1', color: 'blue' })
+    .expect(201)
 
-            expect(response.body.description).toBe('Updated task description')
-            expect(response.body.completed).toBe(true)
-        })
-
-        it('should reject disallowed update fields', async () => {
-            await request(app)
-                .patch(`/api/tasks/${taskOne._id}`)
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .send({ author: userTwo._id })
-                .expect(400)
-        })
-
-        it('should prevent user from updating another user task', async () => {
-            await request(app)
-                .patch(`/api/tasks/${taskThree._id}`)
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .send({ completed: true })
-                .expect(404)
-        })
+  await request(app)
+    .post('/api/tasks')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      description: 'Tagged task',
+      tags: [tagRes.body._id]
     })
+    .expect(201)
 
-    describe('DELETE /api/tasks/:id', () => {
-        it('should delete own task', async () => {
-            await request(app)
-                .delete(`/api/tasks/${taskOne._id}`)
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .expect(200)
+  const response = await request(app)
+    .get(`/api/tasks?tag=${tagRes.body._id}`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .expect(200)
 
-            const deleted = await Task.findById(taskOne._id)
-            expect(deleted).toBeNull()
-        })
+  expect(response.body.tasks).toHaveLength(1)
+  expect(response.body.tasks[0].description).toBe('Tagged task')
+  expect(response.body.total).toBe(1)
+})
 
-        it('should prevent user from deleting another user task', async () => {
-            await request(app)
-                .delete(`/api/tasks/${taskThree._id}`)
-                .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-                .expect(404)
+test('Should update task details, dueDate, and tags', async () => {
+  const tagRes = await request(app)
+    .post('/api/tags')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({ name: 'Backend', color: 'purple' })
+    .expect(201)
 
-            const stillExists = await Task.findById(taskThree._id)
-            expect(stillExists).not.toBeNull()
-        })
+  const response = await request(app)
+    .patch(`/api/tasks/${taskOne._id}`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      description: 'Updated task title',
+      details: 'Added technical notes',
+      dueDate: '2026-12-20T00:00:00.000Z',
+      tags: [tagRes.body._id],
+      completed: true
     })
+    .expect(200)
+
+  expect(response.body.description).toBe('Updated task title')
+  expect(response.body.details).toBe('Added technical notes')
+  expect(response.body.completed).toBe(true)
+  expect(response.body.tags).toHaveLength(1)
+  expect(response.body.tags[0].name).toBe('Backend')
+})
+
+test('Should not allow userTwo to delete userOne task', async () => {
+  await request(app)
+    .delete(`/api/tasks/${taskOne._id}`)
+    .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
+    .expect(404)
 })

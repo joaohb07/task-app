@@ -30,6 +30,7 @@ describe('AppHeader Component', () => {
     cy.get('.cds--header__nav').should('be.visible')
     cy.contains('.cds--header__menu-item', 'Tasks').should('be.visible')
     cy.contains('.cds--header__menu-item', 'Profile').should('be.visible')
+    cy.contains('.cds--header__menu-item', 'About').should('be.visible')
     cy.get('.header-username').should('contain.text', 'João Botelho')
   })
 

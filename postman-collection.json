@@ -2,7 +2,7 @@
   "info": {
     "name": "Task App REST API",
     "_postman_id": "a9d82c40-7f12-4c9a-9e81-taskapp2026",
-    "description": "Complete REST API collection for Task App (Authentication, User Profile, Avatar Upload, and Task Management).",
+    "description": "Complete REST API collection for Task App (Authentication, User Profile, Avatar Management, Tasks with Tags/Details/DueDate, and Color-Coded Tags).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -28,6 +28,11 @@
     },
     {
       "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tagId",
       "value": "",
       "type": "string"
     },
@@ -111,7 +116,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"João Botelho\",\n  \"age\": 27\n}"
+              "raw": "{\n  \"name\": \"João Henrique Botelho\",\n  \"age\": 27\n}"
             },
             "url": "{{baseUrl}}/users/me"
           }
@@ -179,6 +184,72 @@
       ]
     },
     {
+      "name": "Tags",
+      "item": [
+        {
+          "name": "Create Tag",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('tagId', jsonData._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Backend\",\n  \"color\": \"magenta\"\n}"
+            },
+            "url": "{{baseUrl}}/tags"
+          }
+        },
+        {
+          "name": "List Tags (Search & Paginated)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tags?limit=50&skip=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["tags"],
+              "query": [
+                { "key": "search", "value": "Back", "disabled": true },
+                { "key": "limit", "value": "50" },
+                { "key": "skip", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Tag",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"API & Backend\",\n  \"color\": \"teal\"\n}"
+            },
+            "url": "{{baseUrl}}/tags/{{tagId}}"
+          }
+        },
+        {
+          "name": "Delete Tag",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/tags/{{tagId}}"
+          }
+        }
+      ]
+    },
+    {
       "name": "Tasks",
       "item": [
         {
@@ -202,13 +273,13 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage\",\n  \"completed\": false\n}"
+              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage\",\n  \"details\": \"Ensure backend routers and Vue components have full test coverage.\",\n  \"dueDate\": \"2026-12-01T00:00:00.000Z\",\n  \"completed\": false,\n  \"tags\": [\n    \"{{tagId}}\"\n  ]\n}"
             },
             "url": "{{baseUrl}}/tasks"
           }
         },
         {
-          "name": "List Tasks (Filtered & Paginated)",
+          "name": "List Tasks (Filtered, Sorted & Paginated)",
           "request": {
             "method": "GET",
             "url": {
@@ -217,6 +288,7 @@
               "path": ["tasks"],
               "query": [
                 { "key": "completed", "value": "false", "disabled": true },
+                { "key": "tag", "value": "{{tagId}}", "disabled": true },
                 { "key": "limit", "value": "10" },
                 { "key": "skip", "value": "0" },
                 { "key": "sortBy", "value": "createdAt:desc" }
@@ -238,7 +310,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage (Done)\",\n  \"completed\": true\n}"
+              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage (Done)\",\n  \"details\": \"All unit, integration, component, and E2E suites passing.\",\n  \"dueDate\": \"2026-12-05T00:00:00.000Z\",\n  \"completed\": true,\n  \"tags\": [\n    \"{{tagId}}\"\n  ]\n}"
             },
             "url": "{{baseUrl}}/tasks/{{taskId}}"
           }

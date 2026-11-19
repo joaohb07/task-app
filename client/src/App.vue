@@ -5,6 +5,10 @@ import AppHeader from './components/AppHeader.vue'
 
 const auth = useAuthStore()
 
+/**
+ * On component mount, check if the user is authenticated.
+ * If authenticated, fetch the user's profile information.
+ */
 onMounted(() => {
   if (auth.isAuthenticated) {
     auth.fetchProfile()

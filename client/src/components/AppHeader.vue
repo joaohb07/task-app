@@ -9,6 +9,7 @@ import Light from '@carbon/icons-vue/es/light/16'
 import Asleep from '@carbon/icons-vue/es/asleep/16'
 import Menu from '@carbon/icons-vue/es/menu/20'
 import Close from '@carbon/icons-vue/es/close/20'
+import Help from '@carbon/icons-vue/es/help/20'
 
 const router = useRouter()
 const route = useRoute()
@@ -17,7 +18,10 @@ const auth = useAuthStore()
 const isLight = ref(false)
 const mobileMenuOpen = ref(false)
 
-// Fecha automaticamente o menu mobile ao navegar entre rotas
+/**
+ * Watch for route changes to automatically close the mobile menu.
+ * This ensures that the mobile menu is closed when navigating to a new route.
+ */
 watch(
   () => route.path,
   () => {
@@ -25,11 +29,19 @@ watch(
   }
 )
 
+/**
+ * Toggle the theme between light and dark.
+ * Updates the document element's theme attribute accordingly.
+ */
 const toggleTheme = () => {
   isLight.value = !isLight.value
   document.documentElement.setAttribute('data-carbon-theme', isLight.value ? 'g10' : 'g100')
 }
 
+/**
+ * Handle user logout.
+ * Closes the mobile menu, logs out the user, and redirects to the login page.
+ */
 const handleLogout = async () => {
   mobileMenuOpen.value = false
   await auth.logout(false)
@@ -39,7 +51,6 @@ const handleLogout = async () => {
 
 <template>
   <header class="cds--header" role="banner" aria-label="Task App">
-    <!-- Botão Hamburger visível em telas menores quando autenticado -->
     <button
       v-if="auth.isAuthenticated"
       type="button"
@@ -54,7 +65,7 @@ const handleLogout = async () => {
 
     <a class="cds--header__name" href="#/dashboard">Task App</a>
 
-    <!-- Navegação Desktop -->
+    <!-- Desktop navigation -->
     <nav v-if="auth.isAuthenticated" class="cds--header__nav" aria-label="Main navigation">
       <ul class="cds--header__menu-bar">
         <li>
@@ -77,10 +88,20 @@ const handleLogout = async () => {
             <span>Profile</span>
           </router-link>
         </li>
+        <li>
+          <router-link
+            to="/about"
+            class="cds--header__menu-item"
+            :class="{ 'cds--header__menu-item--current': route.path === '/about' }"
+          >
+            <Help class="icon-inline" />
+            <span>About</span>
+          </router-link>
+        </li>
       </ul>
     </nav>
 
-    <!-- Ações Globais à Direita -->
+    <!-- Global Actions -->
     <div class="cds--header__global">
       <button
         type="button"
@@ -111,7 +132,7 @@ const handleLogout = async () => {
     </div>
   </header>
 
-  <!-- Drawer Lateral Colapsável (Mobile / Tablet) -->
+  <!-- Collapsible Drawer (Mobile / Tablet) -->
   <template v-if="auth.isAuthenticated && mobileMenuOpen">
     <div class="mobile-nav-overlay" @click="mobileMenuOpen = false" />
     <nav class="mobile-nav-drawer" aria-label="Mobile navigation">
@@ -166,7 +187,6 @@ const handleLogout = async () => {
   fill: currentColor;
 }
 
-/* Botão hamburger: oculto no desktop onde .cds--header__nav aparece (>= 1056px) */
 .mobile-menu-trigger {
   display: none;
 }
@@ -204,7 +224,6 @@ const handleLogout = async () => {
   flex-shrink: 0;
 }
 
-/* Em telas muito estreitas (< 480px), esconde o nome para não espremer os botões */
 @media (max-width: 480px) {
   .header-username {
     display: none;
@@ -215,7 +234,6 @@ const handleLogout = async () => {
   }
 }
 
-/* Mobile Side Navigation Drawer */
 .mobile-nav-overlay {
   position: fixed;
   inset: 3rem 0 0 0;

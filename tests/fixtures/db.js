@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken')
 const { MongoMemoryServer } = require('mongodb-memory-server')
 const User = require('../../src/models/user')
 const Task = require('../../src/models/task')
+const Tag = require('../../src/models/tag')
 
 let mongoServer
 
@@ -71,6 +72,7 @@ const connectTestDB = async () => {
 const setupDatabase = async () => {
     await User.deleteMany({})
     await Task.deleteMany({})
+    await Tag.deleteMany({})
 
     await new User(userOne).save()
     await new User(userTwo).save()
