@@ -1,6 +1,6 @@
 /**
  * End-to-End test suite for the Dashboard (task CRUD, subtasks, priorities, tags,
- * status/priority/tag filtering, and deletion) and Profile management flows.
+ * status/priority/tag filtering, 3-stage Kanban board view, and deletion) and Profile management flows.
  */
 describe('Dashboard Task Management & Profile E2E', () => {
   // Mock authenticated user seeded into localStorage before visiting protected routes
@@ -29,6 +29,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
         details: 'Cover tasks and tags endpoints with Supertest.',
         dueDate: '2026-11-25T00:00:00.000Z',
         priority: 'medium',
+        status: 'todo',
         subtasks: [],
         tags: [mockTags[0], mockTags[1]],
         completed: false,
@@ -40,6 +41,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
         details: '',
         dueDate: null,
         priority: 'none',
+        status: 'done',
         subtasks: [],
         tags: [mockTags[1]],
         completed: true,
@@ -149,6 +151,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
         details: req.body.details || '',
         dueDate: req.body.dueDate || null,
         priority: req.body.priority || 'none',
+        status: req.body.status || 'todo',
         subtasks: normalizedSubtasks,
         tags: resolvedTags,
         completed: false,
@@ -158,7 +161,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
       req.reply({ statusCode: 201, body: created })
     }).as('createTask')
 
-    // Stub partial task updates (description, priority, completion, subtasks, and tags)
+    // Stub partial task updates (description, priority, status, completion, subtasks, and tags)
     cy.intercept('PATCH', '**/api/tasks/*', (req) => {
       const id = req.url.split('/').pop()
       const target = mockTasks.find((t) => t._id === id)
@@ -177,6 +180,11 @@ describe('Dashboard Task Management & Profile E2E', () => {
         }
         const { tags: _ignoredTags, subtasks: _ignoredSubtasks, ...rest } = req.body
         Object.assign(target, rest)
+        if (typeof rest.status === 'string') {
+          target.completed = rest.status === 'done'
+        } else if (typeof rest.completed === 'boolean') {
+          target.completed = rest.completed
+        }
       }
       req.reply({ statusCode: 200, body: target })
     }).as('updateTask')
@@ -250,7 +258,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.contains('tr', 'Deploy Task App to Home Server').within(() => {
       cy.contains('Configure Nginx Proxy Manager and Docker Compose.').should('be.visible')
       cy.contains('.subtask-counter-badge', '0/2').should('be.visible')
-      cy.contains('.priority-pill', 'High').should('be.visible')
+      cy.contains('.priority-pill--high', 'High').should('be.visible')
       cy.contains('.cds--tag', 'DevOps').should('be.visible')
     })
 
@@ -304,6 +312,77 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.wait('@deleteTask')
     cy.wait('@fetchTasks')
     cy.contains('td', 'Write Jest & Supertest suite').should('not.exist')
+  })
+
+  it('switches to Kanban board view, moves tasks across TO-DO, WIP, and DONE columns, and manages cards', () => {
+    cy.contains('.view-switcher button', 'Kanban').click()
+    cy.get('[data-testid="kanban-board"]').should('be.visible')
+
+    // Verify initial cards in TO-DO, WIP, and DONE columns
+    cy.get('[data-stage="todo"]').within(() => {
+      cy.contains('.kanban-column-count', '1').should('be.visible')
+      cy.contains('.kanban-card', 'Write Jest backend tests').should('be.visible')
+    })
+
+    cy.get('[data-stage="wip"]').within(() => {
+      cy.contains('.kanban-column-count', '0').should('be.visible')
+    })
+
+    cy.get('[data-stage="done"]').within(() => {
+      cy.contains('.kanban-column-count', '1').should('be.visible')
+      cy.contains('.kanban-card', 'Build Cypress E2E suite').should('be.visible')
+    })
+
+    // Move TO-DO task to WIP column
+    cy.get('[data-stage="todo"]')
+      .contains('.kanban-card', 'Write Jest backend tests')
+      .find('button[title="Move to WIP"]')
+      .click()
+
+    cy.wait('@updateTask')
+    cy.wait('@fetchTasks')
+
+    cy.get('[data-stage="todo"]').within(() => {
+      cy.contains('.kanban-column-count', '0').should('be.visible')
+      cy.contains('Write Jest backend tests').should('not.exist')
+    })
+
+    cy.get('[data-stage="wip"]').within(() => {
+      cy.contains('.kanban-column-count', '1').should('be.visible')
+      cy.contains('.kanban-card', 'Write Jest backend tests').should('be.visible')
+    })
+
+    // Move WIP task to DONE column
+    cy.get('[data-stage="wip"]')
+      .contains('.kanban-card', 'Write Jest backend tests')
+      .find('button[title="Move to DONE"]')
+      .click()
+
+    cy.wait('@updateTask')
+    cy.wait('@fetchTasks')
+
+    cy.get('[data-stage="wip"]').within(() => {
+      cy.contains('.kanban-column-count', '0').should('be.visible')
+    })
+
+    cy.get('[data-stage="done"]').within(() => {
+      cy.contains('.kanban-column-count', '2').should('be.visible')
+      cy.contains('.kanban-card', 'Write Jest backend tests').should('be.visible')
+    })
+
+    // Open view modal from card title and return to Table view
+    cy.get('[data-stage="done"]')
+      .contains('.kanban-card-title', 'Write Jest backend tests')
+      .click()
+    cy.contains('#task-modal-title', 'Task Details').should('be.visible')
+    cy.contains('#task-modal-title', 'Task Details')
+      .closest('.cds--modal-container')
+      .contains('.cds--modal-footer button', 'Close')
+      .click()
+
+    cy.contains('.view-switcher button', 'Table').click()
+    cy.get('[data-testid="kanban-board"]').should('not.exist')
+    cy.get('table.cds--data-table').should('be.visible')
   })
 
   it('navigates to Profile view and updates user details', () => {

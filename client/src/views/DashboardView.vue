@@ -9,27 +9,25 @@ import View from '@carbon/icons-vue/es/view/16'
 import ChevronLeft from '@carbon/icons-vue/es/chevron--left/16'
 import ChevronRight from '@carbon/icons-vue/es/chevron--right/16'
 import TagIcon from '@carbon/icons-vue/es/tag/16'
+import TableSplit from '@carbon/icons-vue/es/table--split/16'
+import Column from '@carbon/icons-vue/es/column/16'
 import ManageTagsModal from '../components/ManageTagsModal.vue'
 import TaskModal from '../components/TaskModal.vue'
+import KanbanBoard from '../components/KanbanBoard.vue'
 
 /**
  * DashboardView.vue
- *
- * This component serves as the main dashboard for the task management application.
- * It displays key performance indicators (KPIs), provides quick actions for managing tasks and tags,
- * and presents a data table for viewing, filtering, sorting, and paginating tasks.
- *
- * The component interacts with the task and tag stores to fetch and manage data.
- * It also handles modal dialogs for creating, editing, and viewing tasks, as well as managing tags.
+ * Main dashboard displaying KPIs, quick actions, and a switchable Table / Kanban workspace
+ * for managing tasks, tags, priorities, and subtasks.
  */
 const taskStore = useTaskStore()
 const tagStore = useTagStore()
 
 /**
- * Reactive state variables for managing modal visibility and task operations.
- * - isTagsModalOpen: Controls the visibility of the Manage Tags modal.
- * - isTaskModalOpen: Controls the visibility of the Task modal.
- * - taskModalMode: Determines the mode of the Task modal ('create', 'edit', or 'view').
+ * Reactive state variables for controlling the visibility of modals and the current task being edited/viewed.
+ * - isTagsModalOpen: Controls the visibility of the ManageTagsModal.
+ * - isTaskModalOpen: Controls the visibility of the TaskModal.
+ * - taskModalMode: Determines the mode of the TaskModal ('create', 'edit', or 'view').
  * - activeTask: Holds the currently selected task for viewing or editing.
  */
 const isTagsModalOpen = ref(false)
@@ -38,8 +36,8 @@ const taskModalMode = ref('create') // 'create' | 'edit' | 'view'
 const activeTask = ref(null)
 
 /**
- * Mapping of task priority levels to their corresponding display labels.
- * This is used to render user-friendly priority labels in the task table.
+ * Maps task priorities to their display labels for the Table view and Kanban board.
+ * Ensures consistent labeling across different components of the dashboard.
  */
 const priorityLabelMap = {
   none: 'None',
@@ -49,8 +47,18 @@ const priorityLabelMap = {
 }
 
 /**
- * Lifecycle hook that runs when the component is mounted.
- * It fetches the initial list of tasks and all available tags from the respective stores.
+ * Maps task stages to their display labels for the Kanban board and table view.
+ * Ensures consistent labeling across different components of the dashboard.
+ */
+const stageLabelMap = {
+  todo: 'TO-DO',
+  wip: 'WIP',
+  done: 'DONE'
+}
+
+/**
+ * Fetches initial data for tasks and tags when the component is mounted.
+ * Ensures that the dashboard has the latest tasks and tag information.
  */
 onMounted(() => {
   taskStore.fetchTasks()
@@ -58,14 +66,28 @@ onMounted(() => {
 })
 
 /**
- * Computed property that calculates the total number of pages based on the total tasks and the limit per page.
- * Ensures that there is always at least one page, even if there are no tasks.
+ * Computes the total number of pages based on the total tasks and the limit per page.
+ * Ensures that there is at least one page even if there are no tasks.
  */
 const totalPages = computed(() => Math.max(1, Math.ceil(taskStore.total / taskStore.limit)))
 
 /**
- * Opens the Task modal in 'create' mode, allowing the user to create a new task.
- * Resets the activeTask to null to ensure a fresh form.
+ * Resolves the stage of a task based on its status and completion state.
+ * If the task has a valid status ('todo', 'wip', 'done'), it returns that status.
+ * Otherwise, it determines the stage based on whether the task is completed or not.
+ * @param {Object} task - The task object to evaluate.
+ * @returns {string} - The resolved stage ('todo', 'wip', or 'done').
+ */
+const resolveTaskStage = (task) => {
+  if (task.status && ['todo', 'wip', 'done'].includes(task.status)) {
+    return task.status
+  }
+  return task.completed ? 'done' : 'todo'
+}
+
+/**
+ * Opens the TaskModal in create mode.
+ * Resets the activeTask to null and updates the modal mode to 'create'.
  */
 const openCreateTask = () => {
   activeTask.value = null
@@ -74,9 +96,9 @@ const openCreateTask = () => {
 }
 
 /**
- * Opens the Task modal in 'view' mode for the specified task.
- * Sets the activeTask to the selected task for viewing its details.
- * @param {Object} task - The task object to view.
+ * Opens the TaskModal in view mode for the specified task.
+ * Sets the activeTask to the provided task and updates the modal mode to 'view'.
+ * @param {Object} task - The task object to be viewed.
  */
 const openViewTask = (task) => {
   activeTask.value = task
@@ -85,9 +107,9 @@ const openViewTask = (task) => {
 }
 
 /**
- * Opens the Task modal in 'edit' mode for the specified task.
- * Sets the activeTask to the selected task for editing its details.
- * @param {Object} task - The task object to edit.
+ * Opens the TaskModal in edit mode for the specified task.
+ * Sets the activeTask to the provided task and updates the modal mode to 'edit'.
+ * @param {Object} task - The task object to be edited.
  */
 const openEditTask = (task) => {
   activeTask.value = task
@@ -96,9 +118,10 @@ const openEditTask = (task) => {
 }
 
 /**
- * Handles changes to the tags by fetching the updated list of tags from the tag store.
- * If the currently selected tag is no longer available, it resets the selected tag filter.
- * Finally, it fetches the tasks again to reflect any changes in the task list.
+ * Handles the event when tags are changed in the ManageTagsModal.
+ * Fetches all tags again and checks if the currently selected tag filter is still valid.
+ * If the selected tag no longer exists, it resets the selected tag filter to an empty string.
+ * Finally, it fetches tasks based on the updated tag list and current filters.
  */
 const handleTagsChanged = () => {
   tagStore.fetchAllTags()
@@ -112,8 +135,19 @@ const handleTagsChanged = () => {
 }
 
 /**
- * Sets the current task filter (all, pending, completed) and resets the page to 1.
- * Fetches the tasks again to reflect the new filter.
+ * Handles the movement of a task between stages in the Kanban board.
+ * Calls the task store to update the task's status based on the new stage.
+ * @param {Object} payload - The payload containing the task and new status.
+ * @param {Object} payload.task - The task being moved.
+ * @param {string} payload.status - The new status ('todo', 'wip', 'done').
+ */
+const handleKanbanMove = ({ task, status }) => {
+  taskStore.moveTaskStage(task, status)
+}
+
+/**
+ * Sets the task filter (all, pending, completed) and resets the page to 1.
+ * Fetches tasks based on the new filter.
  * @param {string} filter - The filter to apply ('all', 'pending', 'completed').
  */
 const setFilter = (filter) => {
@@ -123,9 +157,9 @@ const setFilter = (filter) => {
 }
 
 /**
- * Changes the tag filter and resets the page to 1.
- * Fetches the tasks again to reflect the new filter.
- * @param {Object} e - The event object from the select element.
+ * Changes the selected tag filter for tasks based on user selection.
+ * Resets the current page to 1 and fetches tasks with the new tag filter applied.
+ * @param {Event} e - The change event from the tag select dropdown.
  */
 const changeTagFilter = (e) => {
   taskStore.selectedTag = e.target.value
@@ -134,9 +168,9 @@ const changeTagFilter = (e) => {
 }
 
 /**
- * Changes the priority filter and resets the page to 1.
- * Fetches the tasks again to reflect the new filter.
- * @param {Object} e - The event object from the select element.
+ * Changes the priority filter for tasks based on user selection.
+ * Resets the current page to 1 and fetches tasks with the new priority filter applied.
+ * @param {Event} e - The change event from the priority select dropdown.
  */
 const changePriorityFilter = (e) => {
   taskStore.selectedPriority = e.target.value
@@ -145,9 +179,9 @@ const changePriorityFilter = (e) => {
 }
 
 /**
- * Changes the sort order and resets the page to 1.
- * Fetches the tasks again to reflect the new sort order.
- * @param {Object} e - The event object from the select element.
+ * Changes the sorting criteria for tasks based on user selection.
+ * Resets the current page to 1 and fetches tasks with the new sorting applied.
+ * @param {Event} e - The change event from the sort select dropdown.
  */
 const changeSort = (e) => {
   taskStore.sortBy = e.target.value
@@ -156,10 +190,10 @@ const changeSort = (e) => {
 }
 
 /**
- * Changes the current page by a specified delta (e.g., -1 for previous, +1 for next).
- * Ensures that the new page number is within valid bounds before updating.
- * Fetches the tasks again to reflect the new page.
- * @param {number} delta - The change in page number (positive or negative).
+ * Changes the current page of tasks by a given delta.
+ * Ensures that the new page number is within valid bounds (1 to totalPages).
+ * Fetches tasks for the new page if the change is valid.
+ * @param {number} delta - The change in page number (e.g., -1 for previous, +1 for next).
  */
 const changePage = (delta) => {
   const next = taskStore.page + delta
@@ -170,11 +204,10 @@ const changePage = (delta) => {
 }
 
 /**
- * Formats an ISO date string into a human-readable format (e.g., "Jan 1, 2024").
- * If the input is invalid or null, it returns a placeholder '—'.
- * Optionally formats the date in UTC if specified.
+ * Formats an ISO date string into a human-readable format.
+ * If the input is null or undefined, returns a placeholder '—'.
  * @param {string} iso - The ISO date string to format.
- * @param {boolean} useUtc - Whether to format the date in UTC (default: false).
+ * @param {boolean} useUtc - Whether to format the date in UTC or local time.
  * @returns {string} - The formatted date string or '—' if input is invalid.
  */
 const formatDate = (iso, useUtc = false) => {
@@ -189,8 +222,8 @@ const formatDate = (iso, useUtc = false) => {
 
 /**
  * Determines if a task is overdue based on its due date and completion status.
- * A task is considered overdue if it has a due date that is before today's date and is not completed.
- * @param {Object} task - The task object to check.
+ * A task is considered overdue if it has a due date in the past and is not completed.
+ * @param {Object} task - The task object to evaluate.
  * @returns {boolean} - True if the task is overdue, false otherwise.
  */
 const isOverdue = (task) => {
@@ -203,7 +236,7 @@ const isOverdue = (task) => {
 
 <template>
   <div class="page-container">
-    <!-- Top KPI Summary Tiles (Carbon Grid Pattern) -->
+    <!-- Top KPI Summary Tiles -->
     <div class="kpi-grid">
       <div class="cds--tile kpi-tile">
         <span class="cds--type-label-01">TOTAL TASKS</span>
@@ -264,20 +297,42 @@ const isOverdue = (task) => {
       @open-tags="isTagsModalOpen = true"
     />
 
-    <!-- Carbon Data Table Container -->
+    <!-- Workspace Container (Table or Kanban) -->
     <div class="cds--data-table-container">
-      <div class="cds--data-table-header">
+      <div class="cds--data-table-header workspace-header-row">
         <div>
           <h4 class="cds--data-table-header__title">Tasks</h4>
           <p class="cds--data-table-header__description">
             Manage, filter, and track status across your personal backlog.
           </p>
         </div>
+
+        <!-- View Mode Switcher: Table vs Kanban -->
+        <div class="view-switcher" role="group" aria-label="Workspace view mode">
+          <button
+            type="button"
+            class="cds--btn cds--btn--sm"
+            :class="taskStore.viewMode === 'table' ? 'cds--btn--primary' : 'cds--btn--tertiary'"
+            @click="taskStore.setViewMode('table')"
+          >
+            <span>Table</span>
+            <TableSplit class="cds--btn__icon" />
+          </button>
+          <button
+            type="button"
+            class="cds--btn cds--btn--sm"
+            :class="taskStore.viewMode === 'kanban' ? 'cds--btn--primary' : 'cds--btn--tertiary'"
+            @click="taskStore.setViewMode('kanban')"
+          >
+            <span>Kanban</span>
+            <Column class="cds--btn__icon" />
+          </button>
+        </div>
       </div>
 
-      <!-- Table Toolbar (Status Filters + Priority Filter + Tag Filter + Sorting) -->
+      <!-- Toolbar (Status Filters in Table mode + Priority Filter + Tag Filter + Sorting) -->
       <div class="table-controls-bar">
-        <div class="filter-tabs">
+        <div v-if="taskStore.viewMode === 'table'" class="filter-tabs">
           <button
             type="button"
             class="cds--btn cds--btn--sm"
@@ -302,6 +357,9 @@ const isOverdue = (task) => {
           >
             Completed ({{ taskStore.stats.completed }})
           </button>
+        </div>
+        <div v-else class="kanban-legend">
+          <span class="cds--type-label-01">3-STAGE BOARD: TO-DO • WIP • DONE</span>
         </div>
 
         <div class="toolbar-selects">
@@ -357,156 +415,171 @@ const isOverdue = (task) => {
         </div>
       </div>
 
-      <!-- Data Table with horizontal scroll wrapper -->
-      <div class="table-scroll-wrapper">
-        <table class="cds--data-table cds--data-table--zebra">
-          <thead>
-            <tr>
-              <th style="width: 56px">Done</th>
-              <th>Task</th>
-              <th style="width: 110px">Priority</th>
-              <th style="width: 210px">Tags</th>
-              <th style="width: 130px">Due Date</th>
-              <th style="width: 115px">Status</th>
-              <th style="width: 130px; text-align: right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="taskStore.loading">
-              <td colspan="7" class="empty-cell">Loading tasks...</td>
-            </tr>
-            <tr v-else-if="taskStore.items.length === 0">
-              <td colspan="7" class="empty-cell">
-                No tasks found for the current filter. Create one above!
-              </td>
-            </tr>
-            <tr v-for="task in taskStore.items" :key="task._id">
-              <td>
-                <input
-                  type="checkbox"
-                  :checked="task.completed"
-                  aria-label="Toggle task status"
-                  class="task-checkbox"
-                  @change="taskStore.toggleTask(task)"
-                />
-              </td>
-              <td>
-                <div class="task-title-row">
+      <!-- KANBAN VIEW -->
+      <KanbanBoard
+        v-if="taskStore.viewMode === 'kanban'"
+        :tasks="taskStore.items"
+        :loading="taskStore.loading"
+        @move-task="handleKanbanMove"
+        @view-task="openViewTask"
+        @edit-task="openEditTask"
+        @delete-task="taskStore.deleteTask"
+      />
+
+      <!-- TABLE VIEW -->
+      <template v-else>
+        <div class="table-scroll-wrapper">
+          <table class="cds--data-table cds--data-table--zebra">
+            <thead>
+              <tr>
+                <th style="width: 56px">Done</th>
+                <th>Task</th>
+                <th style="width: 110px">Priority</th>
+                <th style="width: 210px">Tags</th>
+                <th style="width: 130px">Due Date</th>
+                <th style="width: 115px">Stage</th>
+                <th style="width: 130px; text-align: right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="taskStore.loading">
+                <td colspan="7" class="empty-cell">Loading tasks...</td>
+              </tr>
+              <tr v-else-if="taskStore.items.length === 0">
+                <td colspan="7" class="empty-cell">
+                  No tasks found for the current filter. Create one above!
+                </td>
+              </tr>
+              <tr v-for="task in taskStore.items" :key="task._id">
+                <td>
+                  <input
+                    type="checkbox"
+                    :checked="task.completed"
+                    aria-label="Toggle task status"
+                    class="task-checkbox"
+                    @change="taskStore.toggleTask(task)"
+                  />
+                </td>
+                <td>
+                  <div class="task-title-row">
+                    <button
+                      type="button"
+                      class="task-title-btn"
+                      :class="{ 'task-done-text': task.completed }"
+                      @click="openViewTask(task)"
+                    >
+                      {{ task.description }}
+                    </button>
+                    <span
+                      v-if="task.subtasks && task.subtasks.length > 0"
+                      class="subtask-counter-badge"
+                      title="Subtasks progress"
+                    >
+                      {{ task.subtasks.filter((s) => s.completed).length }}/{{ task.subtasks.length }}
+                    </span>
+                  </div>
+                  <p v-if="task.details" class="task-details-preview">
+                    {{ task.details }}
+                  </p>
+                </td>
+                <td>
+                  <span
+                    class="cds--tag cds--tag--sm priority-pill"
+                    :class="`priority-pill--${task.priority || 'none'}`"
+                  >
+                    <span class="cds--tag__label">
+                      {{ priorityLabelMap[task.priority || 'none'] }}
+                    </span>
+                  </span>
+                </td>
+                <td>
+                  <div v-if="task.tags && task.tags.length > 0" class="row-tags-wrap">
+                    <span
+                      v-for="tag in task.tags"
+                      :key="tag._id"
+                      class="cds--tag cds--tag--sm"
+                      :class="`cds--tag--${tag.color || 'blue'}`"
+                    >
+                      <span class="cds--tag__label">{{ tag.name }}</span>
+                    </span>
+                  </div>
+                  <span v-else class="muted-dash">—</span>
+                </td>
+                <td>
+                  <span :class="{ 'overdue-text': isOverdue(task) }">
+                    {{ formatDate(task.dueDate, true) }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="cds--tag cds--tag--sm stage-pill"
+                    :class="`stage-pill--${resolveTaskStage(task)}`"
+                  >
+                    <span class="cds--tag__label">
+                      {{ stageLabelMap[resolveTaskStage(task)] }}
+                    </span>
+                  </span>
+                </td>
+                <td class="actions-cell">
                   <button
                     type="button"
-                    class="task-title-btn"
-                    :class="{ 'task-done-text': task.completed }"
+                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                    title="View details"
                     @click="openViewTask(task)"
                   >
-                    {{ task.description }}
+                    <View />
                   </button>
-                  <span
-                    v-if="task.subtasks && task.subtasks.length > 0"
-                    class="subtask-counter-badge"
-                    title="Subtasks progress"
+                  <button
+                    type="button"
+                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                    title="Edit task"
+                    @click="openEditTask(task)"
                   >
-                    {{ task.subtasks.filter((s) => s.completed).length }}/{{ task.subtasks.length }}
-                  </span>
-                </div>
-                <p v-if="task.details" class="task-details-preview">
-                  {{ task.details }}
-                </p>
-              </td>
-              <td>
-                <span
-                  class="cds--tag cds--tag--sm priority-pill"
-                  :class="`priority-pill--${task.priority || 'none'}`"
-                >
-                  <span class="cds--tag__label">
-                    {{ priorityLabelMap[task.priority || 'none'] }}
-                  </span>
-                </span>
-              </td>
-              <td>
-                <div v-if="task.tags && task.tags.length > 0" class="row-tags-wrap">
-                  <span
-                    v-for="tag in task.tags"
-                    :key="tag._id"
-                    class="cds--tag cds--tag--sm"
-                    :class="`cds--tag--${tag.color || 'blue'}`"
+                    <Edit />
+                  </button>
+                  <button
+                    type="button"
+                    class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                    title="Delete task"
+                    @click="taskStore.deleteTask(task._id)"
                   >
-                    <span class="cds--tag__label">{{ tag.name }}</span>
-                  </span>
-                </div>
-                <span v-else class="muted-dash">—</span>
-              </td>
-              <td>
-                <span :class="{ 'overdue-text': isOverdue(task) }">
-                  {{ formatDate(task.dueDate, true) }}
-                </span>
-              </td>
-              <td>
-                <span
-                  class="cds--tag cds--tag--sm"
-                  :class="task.completed ? 'cds--tag--green' : 'cds--tag--warm-gray'"
-                >
-                  <span class="cds--tag__label">{{ task.completed ? 'Completed' : 'Pending' }}</span>
-                </span>
-              </td>
-              <td class="actions-cell">
-                <button
-                  type="button"
-                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                  title="View details"
-                  @click="openViewTask(task)"
-                >
-                  <View />
-                </button>
-                <button
-                  type="button"
-                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                  title="Edit task"
-                  @click="openEditTask(task)"
-                >
-                  <Edit />
-                </button>
-                <button
-                  type="button"
-                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
-                  title="Delete task"
-                  @click="taskStore.deleteTask(task._id)"
-                >
-                  <TrashCan />
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Responsive Pagination Footer -->
-      <div class="table-pagination-bar">
-        <span class="pagination-info">
-          Showing {{ taskStore.items.length }} of {{ taskStore.total }} items
-        </span>
-
-        <div class="pagination-controls">
-          <span class="pagination-info">Page {{ taskStore.page }} of {{ totalPages }}</span>
-          <button
-            type="button"
-            class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm pagination-btn"
-            :disabled="taskStore.page <= 1"
-            aria-label="Previous page"
-            @click="changePage(-1)"
-          >
-            <ChevronLeft />
-          </button>
-          <button
-            type="button"
-            class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm pagination-btn"
-            :disabled="taskStore.page >= totalPages"
-            aria-label="Next page"
-            @click="changePage(1)"
-          >
-            <ChevronRight />
-          </button>
+                    <TrashCan />
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
+
+        <!-- Responsive Pagination Footer -->
+        <div class="table-pagination-bar">
+          <span class="pagination-info">
+            Showing {{ taskStore.items.length }} of {{ taskStore.total }} items
+          </span>
+
+          <div class="pagination-controls">
+            <span class="pagination-info">Page {{ taskStore.page }} of {{ totalPages }}</span>
+            <button
+              type="button"
+              class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm pagination-btn"
+              :disabled="taskStore.page <= 1"
+              aria-label="Previous page"
+              @click="changePage(-1)"
+            >
+              <ChevronLeft />
+            </button>
+            <button
+              type="button"
+              class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm pagination-btn"
+              :disabled="taskStore.page >= totalPages"
+              aria-label="Next page"
+              @click="changePage(1)"
+            >
+              <ChevronRight />
+            </button>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -563,6 +636,23 @@ const isOverdue = (task) => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.workspace-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.view-switcher {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.kanban-legend {
+  color: var(--cds-text-secondary);
 }
 
 .table-controls-bar {
@@ -669,7 +759,23 @@ const isOverdue = (task) => {
   text-overflow: ellipsis;
 }
 
-/* Priority Color Tokens: White / Yellow / Orange / Red */
+/* Kanban Stage Badges: Black (TO-DO) / Dark Blue (WIP) / Bright Green (DONE) */
+.stage-pill--todo {
+  background-color: #161616;
+  color: #ffffff;
+}
+
+.stage-pill--wip {
+  background-color: #002d9c;
+  color: #ffffff;
+}
+
+.stage-pill--done {
+  background-color: #24a148;
+  color: #ffffff;
+}
+
+/* Priority Color Tokens */
 .priority-pill--none {
   background-color: #ffffff;
   color: #161616;

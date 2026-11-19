@@ -14,6 +14,7 @@ describe('TaskModal Component', () => {
     details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
     dueDate: '2026-12-15T00:00:00.000Z',
     priority: 'high',
+    status: 'todo',
     subtasks: [
       { _id: 'sub-1', title: 'Add subtasks schema', completed: true },
       { _id: 'sub-2', title: 'Update TaskModal UI', completed: false }
@@ -50,6 +51,7 @@ describe('TaskModal Component', () => {
         details: 'Run Jest and Cypress before merge.',
         dueDate: '2026-11-30T00:00:00.000Z',
         priority: 'medium',
+        status: 'todo',
         subtasks: [{ title: 'Configure GitHub Actions workflow', completed: false }],
         tags: ['tag-2']
       })
@@ -148,6 +150,7 @@ describe('TaskModal Component', () => {
         details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
         dueDate: '2026-12-15T00:00:00.000Z',
         priority: 'low',
+        status: 'done',
         subtasks: [{ _id: 'sub-1', title: 'Add subtasks schema', completed: true }],
         tags: ['tag-1'],
         completed: true

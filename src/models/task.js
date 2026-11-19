@@ -1,10 +1,11 @@
 const mongoose = require('mongoose')
 
 /**
- * Allowed priority levels for tasks.
- * Each priority level has an associated weight for sorting and comparison purposes.
+ * Allowed priority levels and Kanban workflow statuses for tasks.
  */
 const ALLOWED_PRIORITIES = ['none', 'low', 'medium', 'high']
+const ALLOWED_STATUSES = ['todo', 'wip', 'done']
+
 const PRIORITY_WEIGHTS = {
   none: 0,
   low: 1,
@@ -31,8 +32,8 @@ const subtaskSchema = new mongoose.Schema({
 
 /**
  * Task schema definition for MongoDB using Mongoose.
- * Each task has a description, optional details, due date, priority, subtasks, completion status, associated tags, and an author (user).
- * The schema includes timestamps for creation and last update.
+ * Each task has a description, optional details, due date, priority, Kanban status,
+ * subtasks, completion flag, associated tags, and an author (user).
  */
 const taskSchema = new mongoose.Schema(
   {
@@ -61,6 +62,11 @@ const taskSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    status: {
+      type: String,
+      enum: ALLOWED_STATUSES,
+      default: 'todo'
+    },
     subtasks: {
       type: [subtaskSchema],
       default: []
@@ -87,21 +93,36 @@ const taskSchema = new mongoose.Schema(
 )
 
 /**
- * Pre-validation hook to set the priorityOrder based on the priority string.
- * This ensures that tasks can be sorted by priority efficiently.
+ * Pre-validation hook to synchronize priorityOrder, Kanban status, and completed boolean.
  */
 taskSchema.pre('validate', function (next) {
   if (this.priority && PRIORITY_WEIGHTS[this.priority] !== undefined) {
     this.priorityOrder = PRIORITY_WEIGHTS[this.priority]
   }
+
+  if (this.isModified('status') && !this.isModified('completed')) {
+    this.completed = this.status === 'done'
+  } else if (this.isModified('completed') && !this.isModified('status')) {
+    if (this.completed) {
+      this.status = 'done'
+    } else if (this.status === 'done') {
+      this.status = 'todo'
+    }
+  } else if (this.completed && this.status !== 'done') {
+    this.status = 'done'
+  } else if (!this.completed && this.status === 'done') {
+    this.completed = true
+  }
+
   next()
 })
 
 /**
- * Indexes for the task schema to optimize query performance.
- * Indexes are created on author, completed status, creation date, priority order, and tags.
+ * Indexes to optimize query performance for tasks based on author, completion status,
+ * Kanban status, priority order, and tags.
  */
 taskSchema.index({ author: 1, completed: 1, createdAt: -1 })
+taskSchema.index({ author: 1, status: 1, createdAt: -1 })
 taskSchema.index({ author: 1, priorityOrder: -1, createdAt: -1 })
 taskSchema.index({ author: 1, tags: 1 })
 
