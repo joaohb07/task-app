@@ -1,6 +1,5 @@
 import TaskModal from '../../src/components/TaskModal.vue'
 import { useTaskStore } from '../../src/stores/tasks'
-import { useTagStore } from '../../src/stores/tags'
 
 describe('TaskModal Component', () => {
   const sampleTags = [

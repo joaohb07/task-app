@@ -7,6 +7,12 @@ import Edit from '@carbon/icons-vue/es/edit/16'
 import Checkmark from '@carbon/icons-vue/es/checkmark/16'
 import Calendar from '@carbon/icons-vue/es/calendar/16'
 
+/**
+ * Props definition for the TaskModal component.
+ * - open: Boolean indicating if the modal is open.
+ * - mode: String indicating the mode of the modal ('create', 'edit', 'view').
+ * - task: Object representing the task to be viewed or edited.
+ */
 const props = defineProps({
   open: {
     type: Boolean,
@@ -22,11 +28,26 @@ const props = defineProps({
   }
 })
 
+/**
+ * Emits definition for the TaskModal component.
+ * - close: Event emitted when the modal is closed.
+ * - update:mode: Event emitted to update the mode of the modal.
+ * - open-tags: Event emitted to open the tag management modal.
+ */
 const emit = defineEmits(['close', 'update:mode', 'open-tags'])
 
 const taskStore = useTaskStore()
 const tagStore = useTagStore()
 
+/**
+ * Reactive references for form fields and state.
+ * - description: The task title.
+ * - details: Additional details or notes for the task.
+ * - dueDate: The due date for the task in YYYY-MM-DD format.
+ * - selectedTagIds: Array of selected tag IDs for the task.
+ * - completed: Boolean indicating if the task is completed (only relevant in edit mode).
+ * - submitting: Boolean indicating if the form submission is in progress.
+ */
 const description = ref('')
 const details = ref('')
 const dueDate = ref('')
@@ -34,6 +55,13 @@ const selectedTagIds = ref([])
 const completed = ref(false)
 const submitting = ref(false)
 
+/**
+ * Computed properties for the component.
+ * - availableTags: List of all available tags from the tag store.
+ * - isReadOnly: Boolean indicating if the modal is in view mode (read-only).
+ * - modalHeading: The heading text for the modal based on the mode.
+ * - modalLabel: The label text for the modal based on the mode.
+ */
 const availableTags = computed(() => tagStore.allTags || [])
 const isReadOnly = computed(() => props.mode === 'view')
 
@@ -49,11 +77,21 @@ const modalLabel = computed(() => {
   return 'CREATE'
 })
 
+/**
+ * Converts an ISO date string to a format suitable for the input[type="date"] field (YYYY-MM-DD).
+ * @param {string} isoString - The ISO date string to convert.
+ * @returns {string} - The formatted date string or an empty string if input is invalid.
+ */
 const toInputDate = (isoString) => {
   if (!isoString) return ''
   return new Date(isoString).toISOString().split('T')[0]
 }
 
+/**
+ * Formats an ISO date string for display in the UI.
+ * @param {string} isoString - The ISO date string to format.
+ * @returns {string} - The formatted date string or 'No due date' if input is invalid.
+ */
 const formatDisplayDate = (isoString) => {
   if (!isoString) return 'No due date'
   const date = new Date(isoString)
@@ -65,6 +103,10 @@ const formatDisplayDate = (isoString) => {
   })
 }
 
+/**
+ * Synchronizes the form fields with the props.task data when the modal is opened or when the task changes.
+ * Resets the form fields to default values if no task is provided or if the mode is 'create'.
+ */
 const syncFormFromProps = () => {
   taskStore.error = null
   if (props.task && (props.mode === 'edit' || props.mode === 'view')) {
@@ -84,6 +126,10 @@ const syncFormFromProps = () => {
   }
 }
 
+/**
+ * Watch for changes to the 'open' prop.
+ * When the modal is opened, fetch all tags from the tag store.
+ */
 watch(
   () => props.open,
   (isOpen) => {
@@ -94,6 +140,10 @@ watch(
   { immediate: true }
 )
 
+/**
+ * Watch for changes to the 'open', 'mode', and 'task' props.
+ * When the modal is opened, synchronize the form fields with the task data.
+ */
 watch(
   () => [props.open, props.mode, props.task],
   ([isOpen]) => {
@@ -104,6 +154,11 @@ watch(
   { immediate: true }
 )
 
+/**
+ * Toggles the selection of a tag by its ID.
+ * If the tag is already selected, it will be deselected; otherwise, it will be added to the selection.
+ * @param {string} tagId - The ID of the tag to toggle.
+ */
 const toggleTagSelection = (tagId) => {
   if (isReadOnly.value) return
   if (selectedTagIds.value.includes(tagId)) {
@@ -113,6 +168,11 @@ const toggleTagSelection = (tagId) => {
   }
 }
 
+/**
+ * Handles the form submission for creating or updating a task.
+ * Validates the input, constructs the payload, and calls the appropriate store method.
+ * Closes the modal on successful submission.
+ */
 const handleSubmit = async () => {
   const trimmedDesc = description.value.trim()
   if (!trimmedDesc || isReadOnly.value) return
@@ -152,8 +212,6 @@ const handleSubmit = async () => {
   >
     <div class="cds--modal-container modal-box">
       <div class="cds--modal-header">
-        <p class="cds--modal-header__label cds--type-label-01">{{ modalLabel }}</p>
-        <h3 id="task-modal-title" class="cds--modal-header__heading">{{ modalHeading }}</h3>
         <button
           type="button"
           class="cds--modal-close"
@@ -162,6 +220,8 @@ const handleSubmit = async () => {
         >
           <Close class="cds--modal-close__icon" />
         </button>
+        <p class="cds--modal-header__label cds--type-label-01">{{ modalLabel }}</p>
+        <h3 id="task-modal-title" class="cds--modal-header__heading">{{ modalHeading }}</h3>
       </div>
 
       <div class="cds--modal-content modal-body">

@@ -9,6 +9,10 @@ import Close from '@carbon/icons-vue/es/close/16'
 import ChevronLeft from '@carbon/icons-vue/es/chevron--left/16'
 import ChevronRight from '@carbon/icons-vue/es/chevron--right/16'
 
+/**
+ * Props for the ManageTagsModal component.
+ * - 'open': A boolean indicating whether the modal is open or closed.
+ */
 const props = defineProps({
   open: {
     type: Boolean,
@@ -16,8 +20,21 @@ const props = defineProps({
   }
 })
 
+/**
+ * Emits events for the ManageTagsModal component.
+ * - 'close': Emitted when the modal is requested to close.
+ * - 'tags-changed': Emitted when tags are created, updated, or deleted.
+ */
 const emit = defineEmits(['close', 'tags-changed'])
 
+/**
+ * Reactive references for managing tag creation and editing.
+ * - 'newTagName': The name of the new tag being created.
+ * - 'newTagColor': The color of the new tag being created.
+ * - 'editingId': The ID of the tag currently being edited.
+ * - 'editingName': The name of the tag currently being edited.
+ * - 'editingColor': The color of the tag currently being edited.
+ */
 const tagStore = useTagStore()
 const newTagName = ref('')
 const newTagColor = ref('blue')
@@ -25,6 +42,10 @@ const editingId = ref(null)
 const editingName = ref('')
 const editingColor = ref('blue')
 
+/**
+ * Predefined color options for tags.
+ * Each option has a 'value' used in the data model and a 'label' for display.
+ */
 const colorOptions = [
   { value: 'blue', label: 'Blue' },
   { value: 'teal', label: 'Teal' },
@@ -36,24 +57,46 @@ const colorOptions = [
   { value: 'cool-gray', label: 'Cool Gray' }
 ]
 
+/**
+ * Computed properties for managing the list of tags and pagination.
+ * - 'tagItems': The current list of tags from the store.
+ * - 'totalTags': The total number of tags available.
+ * - 'currentPage': The current page number in the pagination.
+ * - 'pageLimit': The number of tags displayed per page.
+ * - 'totalPages': The total number of pages based on the total tags and page limit.
+ */
 const tagItems = computed(() => tagStore.items || [])
 const totalTags = computed(() => tagStore.total ?? tagItems.value.length)
 const currentPage = computed(() => tagStore.page || 1)
 const pageLimit = computed(() => tagStore.limit || 10)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalTags.value / pageLimit.value)))
 
+/**
+ * Start editing a tag.
+ * Sets the editing state to the selected tag's ID, name, and color.
+ * @param {Object} tag - The tag object to edit.
+ */
 const startEdit = (tag) => {
   editingId.value = tag._id
   editingName.value = tag.name
   editingColor.value = tag.color || 'blue'
 }
 
+/**
+ * Cancel the current edit operation.
+ * Resets the editing state to null and clears the editing name and color.
+ */
 const cancelEdit = () => {
   editingId.value = null
   editingName.value = ''
   editingColor.value = 'blue'
 }
 
+/**
+ * Watch for changes to the 'open' prop.
+ * When the modal is opened, fetch the tags and reset any errors.
+ * When the modal is closed, cancel any ongoing edits.
+ */
 watch(
   () => props.open,
   (isOpen) => {
@@ -68,6 +111,11 @@ watch(
   { immediate: true }
 )
 
+/**
+ * Handle the creation of a new tag.
+ * Validates the input, creates the tag via the store, and resets the form on success.
+ * Emits 'tags-changed' event to notify parent components of the change.
+ */
 const handleCreateTag = async () => {
   const trimmed = newTagName.value.trim()
   if (!trimmed) return
@@ -84,6 +132,12 @@ const handleCreateTag = async () => {
   }
 }
 
+/**
+ * Save the edits made to a tag.
+ * Validates the input, updates the tag via the store, and resets the editing state on success.
+ * Emits 'tags-changed' event to notify parent components of the change.
+ * @param {string} id - The ID of the tag being edited.
+ */
 const saveEdit = async (id) => {
   const trimmed = editingName.value.trim()
   if (!trimmed) return
@@ -99,11 +153,21 @@ const saveEdit = async (id) => {
   }
 }
 
+/**
+ * Handle the deletion of a tag.
+ * Deletes the tag via the store and emits 'tags-changed' event to notify parent components.
+ * @param {string} id - The ID of the tag to delete.
+ */
 const handleDelete = async (id) => {
   await tagStore.deleteTag(id)
   emit('tags-changed')
 }
 
+/**
+ * Change the current page in the pagination.
+ * Cancels any ongoing edits and fetches the tags for the new page.
+ * @param {number} delta - The change in page number (e.g., -1 for previous, 1 for next).
+ */
 const changePage = (delta) => {
   const next = currentPage.value + delta
   if (next >= 1 && next <= totalPages.value) {
@@ -125,8 +189,6 @@ const changePage = (delta) => {
   >
     <div class="cds--modal-container modal-box">
       <div class="cds--modal-header">
-        <p class="cds--modal-header__label cds--type-label-01">TAG CATALOG</p>
-        <h3 id="manage-tags-modal-title" class="cds--modal-header__heading">Manage Tags</h3>
         <button
           type="button"
           class="cds--modal-close"
@@ -135,6 +197,8 @@ const changePage = (delta) => {
         >
           <Close class="cds--modal-close__icon" />
         </button>
+        <p class="cds--modal-header__label cds--type-label-01">TAG CATALOG</p>
+        <h3 id="manage-tags-modal-title" class="cds--modal-header__heading">Manage Tags</h3>
       </div>
 
       <div class="cds--modal-content modal-body">

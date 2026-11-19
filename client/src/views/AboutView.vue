@@ -7,6 +7,10 @@ import Launch from '@carbon/icons-vue/es/launch/16'
 
 const router = useRouter()
 
+/**
+ * Tech stack information for the About page.
+ * Each entry includes the technology name, its role in the application, and a color for display.
+ */
 const techStack = [
   { name: 'Vue 3 + Vite', role: 'Reactive SPA & Composition API', color: 'green' },
   { name: 'Pinia', role: 'Modular State Management', color: 'teal' },

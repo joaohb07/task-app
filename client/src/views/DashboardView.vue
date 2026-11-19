@@ -12,39 +12,78 @@ import TagIcon from '@carbon/icons-vue/es/tag/16'
 import ManageTagsModal from '../components/ManageTagsModal.vue'
 import TaskModal from '../components/TaskModal.vue'
 
+/**
+ * Dashboard view logic for managing tasks and tags.
+ * This includes fetching tasks, handling modals for creating/editing/viewing tasks,
+ * filtering, sorting, and pagination of tasks.
+ */
 const taskStore = useTaskStore()
 const tagStore = useTagStore()
 
+/**
+ * Reactive state for controlling the visibility of modals and the current task being edited/viewed.
+ * - isTagsModalOpen: Controls the visibility of the Manage Tags modal.
+ * - isTaskModalOpen: Controls the visibility of the Task modal (create/edit/view).
+ * - taskModalMode: Indicates the mode of the Task modal ('create', 'edit', or 'view').
+ * - activeTask: Holds the currently selected task for viewing or editing.
+ */
 const isTagsModalOpen = ref(false)
 const isTaskModalOpen = ref(false)
 const taskModalMode = ref('create') // 'create' | 'edit' | 'view'
 const activeTask = ref(null)
 
+/**
+ * Lifecycle hook to fetch initial data when the component is mounted.
+ * Fetches tasks and all tags from the respective stores.
+ */
 onMounted(() => {
   taskStore.fetchTasks()
   tagStore.fetchAllTags()
 })
 
+/**
+ * Computed property to calculate the total number of pages based on the total tasks and the limit per page.
+ * Ensures that there is at least one page even if there are no tasks.
+ */
 const totalPages = computed(() => Math.max(1, Math.ceil(taskStore.total / taskStore.limit)))
 
+/**
+ * Opens the Task modal in 'create' mode for adding a new task.
+ * Resets the activeTask to null and sets the modal mode to 'create'.
+ */
 const openCreateTask = () => {
   activeTask.value = null
   taskModalMode.value = 'create'
   isTaskModalOpen.value = true
 }
 
+/**
+ * Opens the Task modal in 'view' mode for viewing the details of a selected task.
+ * Sets the activeTask to the selected task and sets the modal mode to 'view'.
+ * @param {Object} task - The task object to view.
+ */
 const openViewTask = (task) => {
   activeTask.value = task
   taskModalMode.value = 'view'
   isTaskModalOpen.value = true
 }
 
+/**
+ * Opens the Task modal in 'edit' mode for editing an existing task.
+ * Sets the activeTask to the selected task and sets the modal mode to 'edit'.
+ * @param {Object} task - The task object to edit.
+ */
 const openEditTask = (task) => {
   activeTask.value = task
   taskModalMode.value = 'edit'
   isTaskModalOpen.value = true
 }
 
+/**
+ * Handles the event when tags are changed in the Manage Tags modal.
+ * Fetches all tags again and checks if the currently selected tag is still valid.
+ * If the selected tag no longer exists, it resets the selected tag and fetches tasks again.
+ */
 const handleTagsChanged = () => {
   tagStore.fetchAllTags()
   if (
@@ -56,24 +95,44 @@ const handleTagsChanged = () => {
   taskStore.fetchTasks()
 }
 
+/**
+ * Sets the current task filter (all, pending, completed) and resets the page to 1.
+ * Fetches tasks based on the new filter.
+ * @param {string} filter - The filter to apply ('all', 'pending', 'completed').
+ */
 const setFilter = (filter) => {
   taskStore.filter = filter
   taskStore.page = 1
   taskStore.fetchTasks()
 }
 
+/**
+ * Changes the selected tag filter for tasks and resets the page to 1.
+ * Fetches tasks based on the new selected tag.
+ * @param {Event} e - The change event from the tag select input.
+ */
 const changeTagFilter = (e) => {
   taskStore.selectedTag = e.target.value
   taskStore.page = 1
   taskStore.fetchTasks()
 }
 
+/**
+ * Changes the sorting criteria for tasks and resets the page to 1.
+ * Fetches tasks based on the new sorting criteria.
+ * @param {Event} e - The change event from the sort select input.
+ */
 const changeSort = (e) => {
   taskStore.sortBy = e.target.value
   taskStore.page = 1
   taskStore.fetchTasks()
 }
 
+/**
+ * Changes the current page of tasks by a given delta (e.g., -1 for previous, +1 for next).
+ * Ensures that the new page number is within valid bounds before updating and fetching tasks.
+ * @param {number} delta - The change in page number (negative for previous, positive for next).
+ */
 const changePage = (delta) => {
   const next = taskStore.page + delta
   if (next >= 1 && next <= totalPages.value) {
@@ -82,6 +141,13 @@ const changePage = (delta) => {
   }
 }
 
+/**
+ * Formats an ISO date string into a human-readable format (e.g., "Jan 1, 2024").
+ * Optionally formats the date in UTC if specified.
+ * @param {string} iso - The ISO date string to format.
+ * @param {boolean} useUtc - Whether to format the date in UTC (default: false).
+ * @returns {string} - The formatted date string or '—' if the input is invalid.
+ */
 const formatDate = (iso, useUtc = false) => {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-US', {
@@ -92,6 +158,12 @@ const formatDate = (iso, useUtc = false) => {
   })
 }
 
+/**
+ * Determines if a task is overdue based on its due date and completion status.
+ * A task is considered overdue if it has a due date in the past and is not completed.
+ * @param {Object} task - The task object to check.
+ * @returns {boolean} - True if the task is overdue, false otherwise.
+ */
 const isOverdue = (task) => {
   if (!task.dueDate || task.completed) return false
   const todayUtc = new Date().toISOString().split('T')[0]
