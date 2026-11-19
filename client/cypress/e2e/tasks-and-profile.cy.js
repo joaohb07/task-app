@@ -1,5 +1,5 @@
 /**
- * End-to-End test suite for the Dashboard (task CRUD, subtasks, priorities, tags,
+ * End-to-End test suite for the Dashboard (real-time search, task CRUD, subtasks, priorities, tags,
  * status/priority/tag filtering, 3-stage Kanban board view, and deletion) and Profile management flows.
  */
 describe('Dashboard Task Management & Profile E2E', () => {
@@ -204,6 +204,22 @@ describe('Dashboard Task Management & Profile E2E', () => {
       }
     })
     cy.wait(['@fetchTasks', '@fetchTags'])
+  })
+
+  it('filters loaded tasks in real time via SearchBar and clears search', () => {
+    cy.get('.search-bar-tile input[type="search"]').type('Supertest')
+    cy.contains('.search-counter', '1 of 2 shown').should('be.visible')
+    cy.contains('td', 'Write Jest backend tests').should('be.visible')
+    cy.contains('td', 'Build Cypress E2E suite').should('not.exist')
+
+    cy.get('.search-bar-tile input[type="search"]').clear().type('non-existent-term')
+    cy.contains('.search-counter', '0 of 2 shown').should('be.visible')
+    cy.contains('.empty-cell', 'No tasks matching "non-existent-term".').should('be.visible')
+
+    cy.get('button[aria-label="Clear search"]').click()
+    cy.get('.search-bar-tile input[type="search"]').should('have.value', '')
+    cy.contains('td', 'Write Jest backend tests').should('be.visible')
+    cy.contains('td', 'Build Cypress E2E suite').should('be.visible')
   })
 
   it('creates a task via modal with subtasks, priority, details, due date, inline tag creation, and filters/edits/deletes tasks', () => {

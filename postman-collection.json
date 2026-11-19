@@ -2,7 +2,7 @@
   "info": {
     "name": "Task App REST API",
     "_postman_id": "a9d82c40-7f12-4c9a-9e81-taskapp2026",
-    "description": "Complete REST API collection for Task App (Authentication, User Profile, Avatar Management, Tasks with Tags/Details/DueDate, and Color-Coded Tags).",
+    "description": "Complete REST API collection for Task App (Authentication, User Profile, Avatar Management, Tasks with Tags/Details/DueDate/Priority/Status/Subtasks/Search, and Color-Coded Tags).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -273,7 +273,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage\",\n  \"details\": \"Ensure backend routers and Vue components have full test coverage.\",\n  \"dueDate\": \"2026-12-01T00:00:00.000Z\",\n  \"completed\": false,\n  \"tags\": [\n    \"{{tagId}}\"\n  ]\n}"
+              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage\",\n  \"details\": \"Ensure backend routers and Vue components have full test coverage.\",\n  \"dueDate\": \"2026-12-01T00:00:00.000Z\",\n  \"priority\": \"high\",\n  \"status\": \"todo\",\n  \"completed\": false,\n  \"subtasks\": [\n    { \"title\": \"Check route integration tests\", \"completed\": false }\n  ],\n  \"tags\": [\n    \"{{tagId}}\"\n  ]\n}"
             },
             "url": "{{baseUrl}}/tasks"
           }
@@ -288,6 +288,8 @@
               "path": ["tasks"],
               "query": [
                 { "key": "completed", "value": "false", "disabled": true },
+                { "key": "status", "value": "todo", "disabled": true },
+                { "key": "priority", "value": "high", "disabled": true },
                 { "key": "tag", "value": "{{tagId}}", "disabled": true },
                 { "key": "limit", "value": "10" },
                 { "key": "skip", "value": "0" },
@@ -310,7 +312,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage (Done)\",\n  \"details\": \"All unit, integration, component, and E2E suites passing.\",\n  \"dueDate\": \"2026-12-05T00:00:00.000Z\",\n  \"completed\": true,\n  \"tags\": [\n    \"{{tagId}}\"\n  ]\n}"
+              "raw": "{\n  \"description\": \"Review Jest & Cypress coverage (Done)\",\n  \"details\": \"All unit, integration, component, and E2E suites passing.\",\n  \"dueDate\": \"2026-12-05T00:00:00.000Z\",\n  \"priority\": \"medium\",\n  \"status\": \"done\",\n  \"completed\": true,\n  \"subtasks\": [\n    { \"title\": \"Check route integration tests\", \"completed\": true }\n  ],\n  \"tags\": [\n    \"{{tagId}}\"\n  ]\n}"
             },
             "url": "{{baseUrl}}/tasks/{{taskId}}"
           }

@@ -14,6 +14,7 @@ import Column from '@carbon/icons-vue/es/column/16'
 import ManageTagsModal from '../components/ManageTagsModal.vue'
 import TaskModal from '../components/TaskModal.vue'
 import KanbanBoard from '../components/KanbanBoard.vue'
+import SearchBar from '../components/SearchBar.vue'
 
 /**
  * DashboardView.vue
@@ -280,6 +281,15 @@ const isOverdue = (task) => {
       </div>
     </div>
 
+    <!-- Search Bar between Quick Actions and Tasks -->
+    <SearchBar
+      :model-value="taskStore.searchQuery"
+      :result-count="taskStore.filteredItems.length"
+      :total-count="taskStore.items.length"
+      @update:model-value="taskStore.setSearchQuery"
+      @clear="taskStore.clearSearch"
+    />
+
     <!-- Manage Tags Modal -->
     <ManageTagsModal
       :open="isTagsModalOpen"
@@ -418,7 +428,7 @@ const isOverdue = (task) => {
       <!-- KANBAN VIEW -->
       <KanbanBoard
         v-if="taskStore.viewMode === 'kanban'"
-        :tasks="taskStore.items"
+        :tasks="taskStore.filteredItems"
         :loading="taskStore.loading"
         @move-task="handleKanbanMove"
         @view-task="openViewTask"
@@ -445,12 +455,17 @@ const isOverdue = (task) => {
               <tr v-if="taskStore.loading">
                 <td colspan="7" class="empty-cell">Loading tasks...</td>
               </tr>
-              <tr v-else-if="taskStore.items.length === 0">
+              <tr v-else-if="taskStore.filteredItems.length === 0">
                 <td colspan="7" class="empty-cell">
-                  No tasks found for the current filter. Create one above!
+                  <template v-if="taskStore.searchQuery.trim()">
+                    No tasks matching "{{ taskStore.searchQuery.trim() }}".
+                  </template>
+                  <template v-else>
+                    No tasks found for the current filter. Create one above!
+                  </template>
                 </td>
               </tr>
-              <tr v-for="task in taskStore.items" :key="task._id">
+              <tr v-for="task in taskStore.filteredItems" :key="task._id">
                 <td>
                   <input
                     type="checkbox"
@@ -554,7 +569,7 @@ const isOverdue = (task) => {
         <!-- Responsive Pagination Footer -->
         <div class="table-pagination-bar">
           <span class="pagination-info">
-            Showing {{ taskStore.items.length }} of {{ taskStore.total }} items
+            Showing {{ taskStore.filteredItems.length }} of {{ taskStore.total }} items
           </span>
 
           <div class="pagination-controls">
