@@ -11,6 +11,14 @@ const router = new express.Router()
 /** 
  * Register a new user,
  * allows users to create a new account with a unique email and a password.
+ * @route POST /users
+ * @access public
+ * @bodyParam {string} name - The name of the user (required).
+ * @bodyParam {string} email - The email of the user (required, must be unique).
+ * @bodyParam {string} password - The password for the account (required, minimum length 7).
+ * @bodyParam {number} [age] - Optional age of the user.
+ * @returns {Object} - The created user object and an authentication token.
+ * @throws {Error} - Throws an error if validation fails or user creation is unsuccessful.
  */
 router.post('/users', async (req, res) => {
     const user = new User(req.body)
@@ -28,6 +36,12 @@ router.post('/users', async (req, res) => {
 /** 
  * Login user,
  * allows users to authenticate with their email and password.
+ * @route POST /users/login
+ * @access public
+ * @bodyParam {string} email - The email of the user (required).
+ * @bodyParam {string} password - The password for the account (required).
+ * @returns {Object} - The authenticated user object and an authentication token.
+ * @throws {Error} - Throws an error if authentication fails.
  */
 router.post('/users/login', async (req, res) => {
     try {
@@ -42,6 +56,8 @@ router.post('/users/login', async (req, res) => {
 /** 
  * Logout current session,
  * allows users to logout of their current session.
+ * @route POST /users/logout
+ * @access private
  */
 router.post('/users/logout', auth, async (req, res) => {
     try {
@@ -56,6 +72,8 @@ router.post('/users/logout', auth, async (req, res) => {
 /** 
  * Logout all sessions,
  * allows users to logout from all active sessions.
+ * @route POST /users/logoutAll
+ * @access private
  */
 router.post('/users/logoutAll', auth, async (req, res) => {
     try {
@@ -70,6 +88,8 @@ router.post('/users/logoutAll', auth, async (req, res) => {
 /** 
  * Get authenticated user profile,
  * allows users to fetch their own profile information.
+ * @route GET /users/me
+ * @access private
  */
 router.get('/users/me', auth, async (req, res) => {
     res.send(req.user)
@@ -78,6 +98,14 @@ router.get('/users/me', auth, async (req, res) => {
 /** 
  * Update authenticated user profile,
  * allows users to update their own profile information.
+ * @route PATCH /users/me
+ * @access private
+ * @bodyParam {string} [name] - The new name of the user (optional).
+ * @bodyParam {string} [email] - The new email of the user (optional, must be unique).
+ * @bodyParam {string} [password] - The new password for the account (optional, minimum length 7).
+ * @bodyParam {number} [age] - The new age of the user (optional).
+ * @returns {Object} - The updated user object.
+ * @throws {Error} - Throws an error if validation fails or update is unsuccessful.
  */
 router.patch('/users/me', auth, async (req, res) => {
     const updates = Object.keys(req.body)
@@ -102,6 +130,10 @@ router.patch('/users/me', auth, async (req, res) => {
 /** 
  * Delete authenticated user account,
  * allows users to delete their own account and associated data.
+ * @route DELETE /users/me
+ * @access private
+ * @returns {Object} - The deleted user object.
+ * @throws {Error} - Throws an error if deletion fails.
  */
 router.delete('/users/me', auth, async (req, res) => {
     try {
@@ -117,6 +149,11 @@ router.delete('/users/me', auth, async (req, res) => {
 /** 
  * Upload / Update avatar,
  * allows users to upload or update their avatar image.
+ * @route POST /users/me/avatar
+ * @access private
+ * @bodyParam {file} avatar - The avatar image file to upload (JPEG, JPG, or PNG).
+ * @returns {Object} - A success message and the updated user object with avatar.
+ * @throws {Error} - Throws an error if the file is not an image or upload fails.
  */
 const upload = multer({
     limits: {
@@ -133,8 +170,12 @@ const upload = multer({
 /** 
  * Upload / Update avatar,
  * allows users to upload or update their avatar image.
+ * @route POST /users/me/avatar
+ * @access private
+ * @bodyParam {file} avatar - The avatar image file to upload (JPEG, JPG, or PNG).
+ * @returns {Object} - A success message and the updated user object with avatar.
+ * @throws {Error} - Throws an error if the file is not an image or upload fails.
  */
-// Upload / Update avatar
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
     if (!req.file) {
         return res.status(400).send({ error: 'Please select an image file to upload.' })
@@ -155,6 +196,10 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
 /** 
  * Delete avatar,
  * allows users to remove their avatar image.
+ * @route DELETE /users/me/avatar
+ * @access private
+ * @returns {Object} - A success message indicating the avatar has been removed.
+ * @throws {Error} - Throws an error if deletion fails.
  */
 router.delete('/users/me/avatar', auth, async (req, res) => {
     req.user.avatar = undefined
@@ -165,6 +210,10 @@ router.delete('/users/me/avatar', auth, async (req, res) => {
 /** 
  * Fetch avatar binary image,
  * allows users to view their own avatar image or fetch another user's avatar by ID.
+ * @route GET /users/me/avatar
+ * @access private
+ * @returns {Buffer} - The binary image data of the user's avatar.
+ * @throws {Error} - Throws an error if the avatar is not found or retrieval fails.
  */
 router.get('/users/me/avatar', auth, async (req, res) => {
     try {
@@ -181,6 +230,11 @@ router.get('/users/me/avatar', auth, async (req, res) => {
 /** 
  * Fetch avatar binary image by user ID,
  * allows users to fetch another user's avatar by ID.
+ * @route GET /users/:id/avatar
+ * @access public
+ * @param {string} id - The ID of the user whose avatar is to be fetched.
+ * @returns {Buffer} - The binary image data of the user's avatar.
+ * @throws {Error} - Throws an error if the user or avatar is not found or retrieval fails.
  */
 router.get('/users/:id/avatar', async (req, res) => {
     try {

@@ -6,15 +6,18 @@ const auth = require('../middlewares/auth')
 
 const router = new express.Router()
 
+/**
+ * Populate options for task queries to include tag details.
+ */
 const TAG_POPULATE = { path: 'tags', select: 'name color' }
 const ALLOWED_PRIORITIES = ['none', 'low', 'medium', 'high']
 
 /**
  * Validates that every provided tag ID exists and belongs to the authenticated user.
- * @param {Array} tagIds - Array of tag ObjectId strings to validate.
- * @param {mongoose.Types.ObjectId} userId - The ObjectId of the authenticated user.
- * @returns {Promise<Array>} - Resolves with an array of valid tag ObjectId strings.
- * @throws {Error} - Throws an error if any tag ID is invalid or does not belong to the user.
+ * @param {Array} tagIds - Array of tag IDs to validate.
+ * @param {String} userId - The ID of the authenticated user.
+ * @returns {Promise<Array>} - Resolves with an array of valid tag IDs.
+ * @throws {Error} - Throws an error if validation fails.
  */
 const validateUserTags = async (tagIds, userId) => {
   if (!Array.isArray(tagIds)) {
@@ -41,9 +44,45 @@ const validateUserTags = async (tagIds, userId) => {
   return uniqueIds
 }
 
+/**
+ * Validates and normalizes the subtasks array payload.
+ * @param {Array} subtasks - Array of subtask objects to normalize.
+ * @returns {Array} - Normalized array of subtask objects.
+ * @throws {Error} - Throws an error if validation fails.
+ */
+const normalizeSubtasks = (subtasks) => {
+  if (!Array.isArray(subtasks)) {
+    throw new Error('Subtasks must be an array.')
+  }
+
+  return subtasks.map((item) => {
+    if (!item || typeof item.title !== 'string' || !item.title.trim()) {
+      throw new Error('Each subtask must have a non-empty title.')
+    }
+    const normalized = {
+      title: item.title.trim(),
+      completed: Boolean(item.completed)
+    }
+    if (item._id && mongoose.Types.ObjectId.isValid(item._id)) {
+      normalized._id = item._id
+    }
+    return normalized
+  })
+}
+
 /** 
- * Create a new task,
- * allows users to create a new task with a description, optional details, due date, priority, and tags.
+ * Create a new task
+ * @route POST /tasks
+ * @access private
+ * @bodyParam {string} description - The description of the task (required).
+ * @bodyParam {string} [details] - Optional detailed information about the task.
+ * @bodyParam {string} [dueDate] - Optional due date for the task in ISO format.
+ * @bodyParam {string} [priority] - Optional priority level ('none', 'low', 'medium', 'high').
+ * @bodyParam {Array} [subtasks] - Optional array of subtasks, each with a title and completion status.
+ * @bodyParam {boolean} [completed] - Optional completion status of the task (default is false).
+ * @bodyParam {Array} [tags] - Optional array of tag IDs associated with the task.
+ * @returns {Object} - The created task object with populated tag details.
+ * @throws {Error} - Throws an error if validation fails or task creation is unsuccessful.
  */
 router.post('/tasks', auth, async (req, res) => {
   try {
@@ -52,11 +91,17 @@ router.post('/tasks', auth, async (req, res) => {
       validatedTags = await validateUserTags(req.body.tags, req.user._id)
     }
 
+    let normalizedSubtasks = []
+    if (req.body.subtasks !== undefined) {
+      normalizedSubtasks = normalizeSubtasks(req.body.subtasks)
+    }
+
     const task = new Task({
       description: req.body.description,
       details: req.body.details ?? '',
       dueDate: req.body.dueDate || null,
       priority: req.body.priority || 'none',
+      subtasks: normalizedSubtasks,
       completed: Boolean(req.body.completed),
       tags: validatedTags,
       author: req.user._id
@@ -72,8 +117,15 @@ router.post('/tasks', auth, async (req, res) => {
 })
 
 /** 
- * List tasks with filtering (completed, tag, priority), pagination, and sorting,
- * allows users to fetch their tasks with optional filters and supports pagination through limit and skip query parameters.
+ * List tasks with filtering (completed, tag, priority), pagination, and sorting
+ * @route GET /tasks
+ * @access private
+ * @queryParam {boolean} [completed] - Filter tasks by completion status.
+ * @queryParam {string} [tag] - Filter tasks by a specific tag ID.
+ * @queryParam {string} [priority] - Filter tasks by priority level ('none', 'low', 'medium', 'high').
+ * @queryParam {string} [sortBy] - Sort tasks by a field and order (e.g., 'createdAt:desc', 'priority:asc').
+ * @queryParam {number} [limit=10] - Limit the number of tasks returned (default is 10).
+ * @queryParam {number} [skip=0] - Skip a number of tasks for pagination (default is 0).
  */
 router.get('/tasks', auth, async (req, res) => {
   const match = { author: req.user._id }
@@ -134,8 +186,12 @@ router.get('/tasks', auth, async (req, res) => {
 })
 
 /** 
- * Get single task by ID,
- * allows users to fetch a specific task by its ID, ensuring it belongs to the authenticated user.
+ * Get single task by ID
+ * @route GET /tasks/:id
+ * @access private
+ * @param {string} id - The ID of the task to retrieve.
+ * @returns {Object} - The task object with populated tag details.
+ * @throws {Error} - Throws an error if the task is not found or retrieval fails.
  */
 router.get('/tasks/:id', auth, async (req, res) => {
   try {
@@ -152,12 +208,31 @@ router.get('/tasks/:id', auth, async (req, res) => {
 })
 
 /** 
- * Update task by ID,
- * allows users to update a specific task by its ID, ensuring it belongs to the authenticated user.
+ * Update task by ID
+ * @route PATCH /tasks/:id
+ * @access private
+ * @param {string} id - The ID of the task to update.
+ * @bodyParam {string} [description] - The description of the task.
+ * @bodyParam {string} [details] - Optional detailed information about the task.
+ * @bodyParam {string} [dueDate] - Optional due date for the task in ISO format.
+ * @bodyParam {string} [priority] - Optional priority level ('none', 'low', 'medium', 'high').
+ * @bodyParam {Array} [subtasks] - Optional array of subtasks, each with a title and completion status.
+ * @bodyParam {boolean} [completed] - Optional completion status of the task.
+ * @bodyParam {Array} [tags] - Optional array of tag IDs associated with the task.
+ * @returns {Object} - The updated task object with populated tag details.
+ * @throws {Error} - Throws an error if the task is not found or update fails.
  */
 router.patch('/tasks/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body)
-  const allowedUpdates = ['description', 'details', 'dueDate', 'priority', 'completed', 'tags']
+  const allowedUpdates = [
+    'description',
+    'details',
+    'dueDate',
+    'priority',
+    'subtasks',
+    'completed',
+    'tags'
+  ]
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
 
   if (!isValidOperation || updates.length === 0) {
@@ -174,8 +249,12 @@ router.patch('/tasks/:id', auth, async (req, res) => {
       task.tags = await validateUserTags(req.body.tags, req.user._id)
     }
 
+    if (req.body.subtasks !== undefined) {
+      task.subtasks = normalizeSubtasks(req.body.subtasks)
+    }
+
     for (const update of updates) {
-      if (update === 'tags') continue
+      if (update === 'tags' || update === 'subtasks') continue
       if (update === 'dueDate') {
         task.dueDate = req.body.dueDate || null
       } else {
@@ -193,8 +272,12 @@ router.patch('/tasks/:id', auth, async (req, res) => {
 })
 
 /** 
- * Delete task by ID,
- * allows users to delete a specific task by its ID, ensuring it belongs to the authenticated user.
+ * Delete task by ID
+ * @route DELETE /tasks/:id
+ * @access private
+ * @param {string} id - The ID of the task to delete.
+ * @returns {Object} - The deleted task object.
+ * @throws {Error} - Throws an error if the task is not found or deletion fails.
  */
 router.delete('/tasks/:id', auth, async (req, res) => {
   try {

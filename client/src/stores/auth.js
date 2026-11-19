@@ -69,6 +69,7 @@ export const useAuthStore = defineStore('auth', {
      * On success, sets the session with the returned user data and token.
      * @param {Object} payload - The registration data (e.g., name, email, password).
      * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async register(payload) {
       this.loading = true
@@ -91,6 +92,7 @@ export const useAuthStore = defineStore('auth', {
      * @param {string} email - The user's email address.
      * @param {string} password - The user's password.
      * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async login(email, password) {
       this.loading = true
@@ -113,6 +115,8 @@ export const useAuthStore = defineStore('auth', {
      * Updates the user state and localStorage with the fetched data.
      * If the user has an avatar, fetches the avatar image as well.
      * If the request fails (e.g., due to an invalid token), clears the session.
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async fetchProfile() {
       if (!this.token) return
@@ -133,6 +137,7 @@ export const useAuthStore = defineStore('auth', {
      * On success, updates the user state and localStorage with the new data.
      * @param {Object} updates - The profile updates (e.g., name, email, password).
      * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async updateProfile(updates) {
       this.loading = true
@@ -154,6 +159,8 @@ export const useAuthStore = defineStore('auth', {
      * Fetches the authenticated user's avatar image from the server.
      * If the user does not have an avatar, sets the avatarUrl to null.
      * If the request fails, sets the avatarUrl to null.
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async fetchAvatar() {
       if (!this.user?.hasAvatar) {
@@ -173,6 +180,8 @@ export const useAuthStore = defineStore('auth', {
      * Uploads a new avatar image for the authenticated user.
      * On success, updates the user's hasAvatar property and fetches the new avatar image.
      * @param {File} file - The avatar image file to upload.
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async uploadAvatar(file) {
       const formData = new FormData()
@@ -190,6 +199,8 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Deletes the authenticated user's avatar image from the server.
      * On success, revokes the avatar URL, sets it to null, and updates the user's hasAvatar property.
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async deleteAvatar() {
       await api.delete('/users/me/avatar')
@@ -208,6 +219,8 @@ export const useAuthStore = defineStore('auth', {
      * If allSessions is true, logs out from all sessions; otherwise, logs out from the current session only.
      * Clears the user session after logging out.
      * @param {boolean} allSessions - Whether to log out from all sessions (default: false).
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async logout(allSessions = false) {
       try {
@@ -220,6 +233,8 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Deletes the authenticated user's account from the server.
      * Clears the user session after account deletion.
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async deleteAccount() {
       await api.delete('/users/me')

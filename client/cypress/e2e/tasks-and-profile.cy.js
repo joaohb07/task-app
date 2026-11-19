@@ -1,4 +1,9 @@
+/**
+ * End-to-End test suite for the Dashboard (task CRUD, subtasks, priorities, tags,
+ * status/priority/tag filtering, and deletion) and Profile management flows.
+ */
 describe('Dashboard Task Management & Profile E2E', () => {
+  // Mock authenticated user seeded into localStorage before visiting protected routes
   const sampleUser = {
     _id: '673a00000000000000000001',
     name: 'João Botelho',
@@ -11,6 +16,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
   let mockTasks = []
 
   beforeEach(() => {
+    // Reset in-memory fixtures before each test to keep specs isolated and deterministic
     mockTags = [
       { _id: 'tag-1', name: 'Backend', color: 'magenta' },
       { _id: 'tag-2', name: 'Testing', color: 'green' }
@@ -23,6 +29,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
         details: 'Cover tasks and tags endpoints with Supertest.',
         dueDate: '2026-11-25T00:00:00.000Z',
         priority: 'medium',
+        subtasks: [],
         tags: [mockTags[0], mockTags[1]],
         completed: false,
         createdAt: '2026-11-17T10:00:00.000Z'
@@ -33,17 +40,20 @@ describe('Dashboard Task Management & Profile E2E', () => {
         details: '',
         dueDate: null,
         priority: 'none',
+        subtasks: [],
         tags: [mockTags[1]],
         completed: true,
         createdAt: '2026-11-16T10:00:00.000Z'
       }
     ]
 
+    // Stub current user profile endpoint
     cy.intercept('GET', '**/api/users/me', {
       statusCode: 200,
       body: sampleUser
     }).as('getProfile')
 
+    // Stub tag listing and CRUD operations
     cy.intercept('GET', '**/api/tags*', (req) => {
       req.reply({
         statusCode: 200,
@@ -76,6 +86,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.intercept('DELETE', '**/api/tags/*', (req) => {
       const id = req.url.split('/').pop()
       mockTags = mockTags.filter((t) => t._id !== id)
+      // Remove deleted tag references from existing tasks to mirror backend cascade behavior
       mockTasks = mockTasks.map((task) => ({
         ...task,
         tags: (task.tags || []).filter((t) => t._id !== id)
@@ -83,6 +94,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
       req.reply({ statusCode: 200, body: { _id: id } })
     }).as('deleteTag')
 
+    // Stub task listing with completion, tag, and priority query filtering
     cy.intercept('GET', '**/api/tasks*', (req) => {
       let filtered = [...mockTasks]
 
@@ -119,10 +131,17 @@ describe('Dashboard Task Management & Profile E2E', () => {
       })
     }).as('fetchTasks')
 
+    // Stub task creation, resolving tag IDs and normalizing subtask items
     cy.intercept('POST', '**/api/tasks', (req) => {
       const resolvedTags = (req.body.tags || [])
         .map((id) => mockTags.find((t) => t._id === id))
         .filter(Boolean)
+
+      const normalizedSubtasks = (req.body.subtasks || []).map((st, index) => ({
+        _id: `sub-${Date.now()}-${index}`,
+        title: st.title,
+        completed: Boolean(st.completed)
+      }))
 
       const created = {
         _id: `task-${Date.now()}`,
@@ -130,6 +149,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
         details: req.body.details || '',
         dueDate: req.body.dueDate || null,
         priority: req.body.priority || 'none',
+        subtasks: normalizedSubtasks,
         tags: resolvedTags,
         completed: false,
         createdAt: new Date().toISOString()
@@ -138,6 +158,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
       req.reply({ statusCode: 201, body: created })
     }).as('createTask')
 
+    // Stub partial task updates (description, priority, completion, subtasks, and tags)
     cy.intercept('PATCH', '**/api/tasks/*', (req) => {
       const id = req.url.split('/').pop()
       const target = mockTasks.find((t) => t._id === id)
@@ -147,18 +168,27 @@ describe('Dashboard Task Management & Profile E2E', () => {
             .map((tagId) => mockTags.find((t) => t._id === tagId))
             .filter(Boolean)
         }
-        const { tags: _ignored, ...rest } = req.body
+        if (Array.isArray(req.body.subtasks)) {
+          target.subtasks = req.body.subtasks.map((st, index) => ({
+            _id: st._id || `sub-${Date.now()}-${index}`,
+            title: st.title,
+            completed: Boolean(st.completed)
+          }))
+        }
+        const { tags: _ignoredTags, subtasks: _ignoredSubtasks, ...rest } = req.body
         Object.assign(target, rest)
       }
       req.reply({ statusCode: 200, body: target })
     }).as('updateTask')
 
+    // Stub task deletion
     cy.intercept('DELETE', '**/api/tasks/*', (req) => {
       const id = req.url.split('/').pop()
       mockTasks = mockTasks.filter((t) => t._id !== id)
       req.reply({ statusCode: 200, body: { _id: id } })
     }).as('deleteTask')
 
+    // Seed auth session before mounting the SPA on the dashboard route
     cy.visit('/#/dashboard', {
       onBeforeLoad(win) {
         win.localStorage.setItem('task_app_token', 'fake-jwt-token-for-cypress')
@@ -168,14 +198,17 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.wait(['@fetchTasks', '@fetchTags'])
   })
 
-  it('creates a task via modal with priority, details, due date, inline tag creation, and filters/edits/deletes tasks', () => {
+  it('creates a task via modal with subtasks, priority, details, due date, inline tag creation, and filters/edits/deletes tasks', () => {
+    // Verify initial KPI summary cards
     cy.contains('.kpi-tile', 'TOTAL TASKS').should('contain.text', '2')
     cy.contains('.kpi-tile', 'PENDING').should('contain.text', '1')
     cy.contains('.kpi-tile', 'COMPLETED').should('contain.text', '1')
 
+    // Open New Task modal
     cy.contains('.action-bar-buttons button', 'Add Task').click()
     cy.contains('#task-modal-title', 'New Task').should('be.visible')
 
+    // Open Manage Tags modal from inside TaskModal and create a new tag
     cy.contains('.manage-inline-btn', '+ Manage Tags').click()
     cy.contains('#manage-tags-modal-title', 'Manage Tags').should('be.visible')
 
@@ -186,15 +219,23 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.wait('@fetchTags')
     cy.contains('.tag-table-wrapper td', 'DevOps').should('be.visible')
 
+    // Return from Manage Tags modal back to New Task modal
     cy.contains('#manage-tags-modal-title', 'Manage Tags')
       .closest('.cds--modal-container')
       .contains('.cds--modal-footer button', 'Done')
       .click()
 
+    // Populate task fields, add subtasks, select priority and tag, then submit
     cy.get('#task-desc-input').type('Deploy Task App to Home Server')
     cy.get('#task-details-input').type('Configure Nginx Proxy Manager and Docker Compose.')
     cy.get('#task-priority-select').select('high')
     cy.get('#task-due-input').type('2026-12-01')
+
+    cy.get('#new-subtask-input').type('Configure Nginx Proxy route')
+    cy.contains('.add-subtask-btn', 'Add').click()
+    cy.get('#new-subtask-input').type('Verify Tailscale Funnel TLS')
+    cy.contains('.add-subtask-btn', 'Add').click()
+
     cy.contains('.tag-option-pill', 'DevOps').click()
 
     cy.contains('#task-modal-title', 'New Task')
@@ -205,23 +246,25 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.wait('@createTask')
     cy.wait('@fetchTasks')
 
+    // Confirm created task row renders details, subtask counter badge, priority pill, and tag
     cy.contains('tr', 'Deploy Task App to Home Server').within(() => {
       cy.contains('Configure Nginx Proxy Manager and Docker Compose.').should('be.visible')
+      cy.contains('.subtask-counter-badge', '0/2').should('be.visible')
       cy.contains('.priority-pill', 'High').should('be.visible')
       cy.contains('.cds--tag', 'DevOps').should('be.visible')
     })
 
-    // Filter by High priority
+    // Filter tasks by High priority
     cy.get('#priority-filter-select').select('high')
     cy.wait('@fetchTasks')
     cy.contains('td', 'Deploy Task App to Home Server').should('be.visible')
     cy.contains('td', 'Write Jest backend tests').should('not.exist')
 
-    // Reset priority filter
+    // Reset priority filter back to all priorities
     cy.get('#priority-filter-select').select('')
     cy.wait('@fetchTasks')
 
-    // Inspect task in View Details modal and switch to Edit mode
+    // Inspect task in read-only View Details modal and switch into Edit mode
     cy.contains('tr', 'Write Jest backend tests').find('button[title="View details"]').click()
     cy.contains('#task-modal-title', 'Task Details').should('be.visible')
     cy.contains('.priority-pill', 'Priority: Medium').should('be.visible')
@@ -235,12 +278,12 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.wait('@fetchTasks')
     cy.contains('td', 'Write Jest & Supertest suite').should('be.visible')
 
-    // Toggle task completion via row checkbox
+    // Toggle task completion via table row checkbox
     cy.contains('tr', 'Deploy Task App to Home Server').find('input[type="checkbox"]').click()
     cy.wait('@updateTask')
     cy.wait('@fetchTasks')
 
-    // Filter by Pending status
+    // Filter tasks by Pending status
     cy.contains('.filter-tabs button', 'Pending').click()
     cy.wait('@fetchTasks')
     cy.contains('td', 'Write Jest & Supertest suite').should('be.visible')
@@ -254,7 +297,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.contains('td', 'Write Jest & Supertest suite').should('be.visible')
     cy.contains('td', 'Deploy Task App to Home Server').should('not.exist')
 
-    // Reset tag filter and delete task
+    // Clear tag filter and delete the edited task
     cy.get('#tag-filter-select').select('')
     cy.wait('@fetchTasks')
     cy.contains('tr', 'Write Jest & Supertest suite').find('button[title="Delete task"]').click()
@@ -264,17 +307,20 @@ describe('Dashboard Task Management & Profile E2E', () => {
   })
 
   it('navigates to Profile view and updates user details', () => {
-    cy.intercept('PATCH', '/api/users/me', (req) => {
+    // Stub profile update endpoint
+    cy.intercept('PATCH', '**/api/users/me', (req) => {
       req.reply({
         statusCode: 200,
         body: { ...sampleUser, ...req.body }
       })
     }).as('updateProfile')
 
+    // Navigate from header to Profile view
     cy.contains('.cds--header__menu-item', 'Profile').click()
     cy.url().should('include', '#/profile')
     cy.wait('@getProfile')
 
+    // Update name and age and verify confirmation feedback
     cy.get('#prof-name').clear().type('João Henrique Botelho')
     cy.get('#prof-age').clear().type('27')
     cy.get('.profile-form button[type="submit"]').click()
