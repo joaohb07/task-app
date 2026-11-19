@@ -1,6 +1,7 @@
 <script setup>
 import Search from '@carbon/icons-vue/es/search/16'
 import Close from '@carbon/icons-vue/es/close/16'
+import '../styles/components/search-bar.scss'
 
 defineProps({
   modelValue: {
@@ -66,51 +67,3 @@ const handleClear = () => {
     </span>
   </div>
 </template>
-
-<style scoped>
-.search-bar-tile {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--cds-border-subtle);
-}
-
-.search-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 240px;
-}
-
-.search-leading-icon {
-  position: absolute;
-  left: 0.85rem;
-  color: var(--cds-text-secondary);
-  pointer-events: none;
-  flex-shrink: 0;
-}
-
-.search-input {
-  padding-left: 2.35rem;
-  padding-right: 2.25rem;
-}
-
-.search-clear-btn {
-  position: absolute;
-  right: 0.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-counter {
-  font-size: 0.75rem;
-  color: var(--cds-text-secondary);
-  white-space: nowrap;
-}
-</style>

@@ -6,6 +6,7 @@ import Upload from '@carbon/icons-vue/es/upload/16'
 import TrashCan from '@carbon/icons-vue/es/trash-can/16'
 import Save from '@carbon/icons-vue/es/save/16'
 import UserAvatar from '@carbon/icons-vue/es/user--avatar/32'
+import '../styles/views/profile-view.scss'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -108,7 +109,7 @@ const handleDeleteAccount = async () => {
 
       <div class="avatar-preview">
         <img v-if="auth.avatarUrl" :src="auth.avatarUrl" alt="User avatar" class="avatar-img" />
-        <UserAvatar class="avatar-placeholder" />
+        <UserAvatar v-else class="avatar-placeholder" />
       </div>
 
       <input
@@ -204,83 +205,3 @@ const handleDeleteAccount = async () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.profile-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 1.5rem;
-}
-
-@media (max-width: 768px) {
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.profile-card {
-  padding: 1.75rem;
-  border: 1px solid var(--cds-border-subtle);
-}
-
-.subtitle {
-  color: var(--cds-text-secondary);
-  margin-top: 0.35rem;
-}
-
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.avatar-preview {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: var(--cds-layer-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 1.5rem 0;
-  overflow: hidden;
-  border: 2px solid var(--cds-border-strong);
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.profile-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 1.25rem;
-}
-
-.msg-box {
-  margin-top: 1rem;
-  max-width: 100%;
-}
-
-.danger-zone {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--cds-border-subtle);
-}
-
-.danger-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-</style>
