@@ -50,6 +50,59 @@ test('Should create task with details, dueDate, priority, and populated tags', a
   expect(taskInDb.author).toEqual(userOneId)
 })
 
+test('Should create and update task with subtasks', async () => {
+  const createRes = await request(app)
+    .post('/api/tasks')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      description: 'Build Nuncio AI RAG',
+      subtasks: [
+        { title: 'Ingest Church documents into ChromaDB', completed: false },
+        { title: 'Configure Ollama on GTX 1060 3GB', completed: false }
+      ]
+    })
+    .expect(201)
+
+  expect(createRes.body.subtasks).toHaveLength(2)
+  expect(createRes.body.subtasks[0].title).toBe('Ingest Church documents into ChromaDB')
+  expect(createRes.body.subtasks[0].completed).toBe(false)
+
+  const updatedSubtasks = [
+    {
+      _id: createRes.body.subtasks[0]._id,
+      title: createRes.body.subtasks[0].title,
+      completed: true
+    },
+    {
+      _id: createRes.body.subtasks[1]._id,
+      title: createRes.body.subtasks[1].title,
+      completed: false
+    },
+    { title: 'Build chat UI', completed: false }
+  ]
+
+  const patchRes = await request(app)
+    .patch(`/api/tasks/${createRes.body._id}`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({ subtasks: updatedSubtasks })
+    .expect(200)
+
+  expect(patchRes.body.subtasks).toHaveLength(3)
+  expect(patchRes.body.subtasks[0].completed).toBe(true)
+  expect(patchRes.body.subtasks[2].title).toBe('Build chat UI')
+})
+
+test('Should reject subtask with empty title', async () => {
+  await request(app)
+    .post('/api/tasks')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      description: 'Invalid subtask test',
+      subtasks: [{ title: '   ', completed: false }]
+    })
+    .expect(400)
+})
+
 test('Should reject invalid priority values', async () => {
   await request(app)
     .post('/api/tasks')
