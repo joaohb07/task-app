@@ -4,6 +4,8 @@
 
 .modal-body {
   padding-right: 1rem;
+  max-height: 65vh;
+  overflow-y: auto;
 }
 
 .form-error-msg {
@@ -42,6 +44,8 @@
 }
 
 .subtask-add-row {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 0.5rem;
   width: 100%;
@@ -126,6 +130,8 @@
 }
 
 .tags-label-row {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -139,6 +145,8 @@
 }
 
 .tag-selector-grid {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;

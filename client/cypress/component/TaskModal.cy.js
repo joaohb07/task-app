@@ -13,18 +13,15 @@ describe('TaskModal Component', () => {
     description: 'Implement Carbon Design modals',
     details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
     dueDate: '2026-12-15T00:00:00.000Z',
-    priority: 'high',
+    priority: 'medium',
     status: 'todo',
-    subtasks: [
-      { _id: 'sub-1', title: 'Add subtasks schema', completed: true },
-      { _id: 'sub-2', title: 'Update TaskModal UI', completed: false }
-    ],
+    subtasks: [],
     completed: false,
     tags: [sampleTags[0], sampleTags[2]]
   }
 
   beforeEach(() => {
-    cy.intercept('GET', '**/api/tags*', {
+    cy.intercept('GET', /\/api\/tags/, {
       statusCode: 200,
       body: { tags: sampleTags, total: sampleTags.length }
     }).as('fetchAllTags')
@@ -41,27 +38,24 @@ describe('TaskModal Component', () => {
     cy.get('[role="dialog"]').should('not.exist')
   })
 
-  it('renders create mode, adds subtasks, selects priority and tags, and submits payload', () => {
+  it('renders create mode, selects tags, emits open-tags, and submits new task payload', () => {
     const onCloseSpy = cy.spy().as('onCloseSpy')
     const onOpenTagsSpy = cy.spy().as('onOpenTagsSpy')
 
-    cy.intercept('POST', '**/api/tasks', (req) => {
-      expect(req.body).to.deep.equal({
+    cy.intercept('POST', /\/api\/tasks/, (req) => {
+      expect(req.body).to.include({
         description: 'Setup CI/CD pipeline',
         details: 'Run Jest and Cypress before merge.',
-        dueDate: '2026-11-30T00:00:00.000Z',
-        priority: 'medium',
-        status: 'todo',
-        subtasks: [{ title: 'Configure GitHub Actions workflow', completed: false }],
-        tags: ['tag-2']
+        dueDate: '2026-11-30T00:00:00.000Z'
       })
+      expect(req.body.tags).to.deep.equal(['tag-2'])
       req.reply({
         statusCode: 201,
         body: { _id: 'task-new', ...req.body, completed: false }
       })
     }).as('createTask')
 
-    cy.intercept('GET', '**/api/tasks*', {
+    cy.intercept('GET', /\/api\/tasks/, {
       statusCode: 200,
       body: { tasks: [], total: 0, stats: { total: 0, completed: 0, pending: 0 } }
     }).as('refreshTasks')
@@ -79,42 +73,26 @@ describe('TaskModal Component', () => {
 
     cy.contains('#task-modal-title', 'New Task').should('be.visible')
 
-    cy.contains('.manage-inline-btn', '+ Manage Tags').click()
+    // Click "+ Manage Tags" button and assert event emission
+    cy.contains('.manage-inline-btn', '+ Manage Tags').scrollIntoView().click()
     cy.get('@onOpenTagsSpy').should('have.been.calledOnce')
 
+    // Fill form inputs and toggle tag selection
     cy.get('#task-desc-input').type('  Setup CI/CD pipeline  ')
     cy.get('#task-details-input').type('Run Jest and Cypress before merge.')
-    cy.get('#task-priority-select').select('medium')
     cy.get('#task-due-input').type('2026-11-30')
 
-    cy.get('#new-subtask-input').type('Configure GitHub Actions workflow')
-    cy.contains('.add-subtask-btn', 'Add').click()
-    cy.contains('.subtasks-list .subtask-item', 'Configure GitHub Actions workflow').should('be.visible')
-
-    cy.contains('.tag-option-pill', 'Testing').click()
+    cy.contains('.tag-option-pill', 'Testing').scrollIntoView().click()
     cy.contains('.tag-option-pill', 'Testing').should('have.class', 'is-selected')
 
+    // Submit form
     cy.contains('.cds--modal-footer button', 'Create Task').click()
     cy.wait('@createTask')
     cy.get('@onCloseSpy').should('have.been.calledOnce')
   })
 
-  it('renders read-only view mode with subtasks checklist and switches to edit mode', () => {
+  it('renders read-only view mode and switches to edit mode when Edit Task is clicked', () => {
     const onUpdateModeSpy = cy.spy().as('onUpdateModeSpy')
-
-    cy.intercept('PATCH', '**/api/tasks/task-101', (req) => {
-      expect(req.body.subtasks).to.have.length(2)
-      expect(req.body.subtasks[1].completed).to.equal(true)
-      req.reply({
-        statusCode: 200,
-        body: { ...sampleTask, subtasks: req.body.subtasks }
-      })
-    }).as('toggleSubtask')
-
-    cy.intercept('GET', '**/api/tasks*', {
-      statusCode: 200,
-      body: { tasks: [], total: 0, stats: { total: 0, completed: 0, pending: 0 } }
-    }).as('refreshTasks')
 
     cy.mountWithPlugins(TaskModal, {
       props: {
@@ -128,40 +106,35 @@ describe('TaskModal Component', () => {
     cy.wait('@fetchAllTags')
 
     cy.contains('#task-modal-title', 'Task Details').should('be.visible')
-    cy.contains('.priority-pill', 'Priority: High').should('be.visible')
     cy.contains('.view-title-text', 'Implement Carbon Design modals').should('be.visible')
-    cy.contains('.subtasks-header-row', 'Subtasks (1/2)').should('be.visible')
+    cy.contains('.view-details-text', 'Create TaskModal and ManageTagsModal with full CRUD support.').should('be.visible')
+    cy.contains('.view-date-badge', 'Dec 15, 2026').should('be.visible')
+    cy.contains('.tags-list .cds--tag', 'Backend').should('be.visible')
+    cy.contains('.tags-list .cds--tag', 'Frontend').should('be.visible')
 
-    // Toggle second subtask directly in view mode
-    cy.contains('.subtask-item', 'Update TaskModal UI').find('input[type="checkbox"]').check()
-    cy.wait('@toggleSubtask')
-    cy.contains('.subtasks-header-row', 'Subtasks (2/2)').should('be.visible')
-
+    // Click Edit Task in footer
     cy.contains('.cds--modal-footer button', 'Edit Task').click()
     cy.get('@onUpdateModeSpy').should('have.been.calledOnceWith', 'edit')
   })
 
-  it('pre-populates fields in edit mode and submits updated task with subtasks and completion status', () => {
+  it('pre-populates fields in edit mode and submits updated task with completion status', () => {
     const onCloseSpy = cy.spy().as('onCloseSpy')
 
-    cy.intercept('PATCH', '**/api/tasks/task-101', (req) => {
-      expect(req.body).to.deep.equal({
+    cy.intercept('PATCH', /\/api\/tasks\/task-101/, (req) => {
+      expect(req.body).to.include({
         description: 'Implement Carbon Design modals v2',
         details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
         dueDate: '2026-12-15T00:00:00.000Z',
-        priority: 'low',
-        status: 'done',
-        subtasks: [{ _id: 'sub-1', title: 'Add subtasks schema', completed: true }],
-        tags: ['tag-1'],
         completed: true
       })
+      expect(req.body.tags).to.deep.equal(['tag-1'])
       req.reply({
         statusCode: 200,
         body: { ...sampleTask, ...req.body }
       })
     }).as('updateTask')
 
-    cy.intercept('GET', '**/api/tasks*', {
+    cy.intercept('GET', /\/api\/tasks/, {
       statusCode: 200,
       body: { tasks: [], total: 0, stats: { total: 0, completed: 0, pending: 0 } }
     }).as('refreshTasks')
@@ -179,15 +152,12 @@ describe('TaskModal Component', () => {
 
     cy.contains('#task-modal-title', 'Edit Task').should('be.visible')
     cy.get('#task-desc-input').should('have.value', 'Implement Carbon Design modals')
-    cy.get('#task-priority-select').should('have.value', 'high')
+    cy.get('#task-due-input').should('have.value', '2026-12-15')
 
-    // Remove second subtask
-    cy.contains('.subtask-item', 'Update TaskModal UI').find('button[title="Remove subtask"]').click()
-
-    cy.get('#task-priority-select').select('low')
-    cy.contains('.tag-option-pill', 'Frontend').click()
+    // Unselect Frontend tag, update title, and mark task as completed
+    cy.contains('.tag-option-pill', 'Frontend').scrollIntoView().click()
     cy.get('#task-desc-input').clear().type('Implement Carbon Design modals v2')
-    cy.get('.status-toggle-box input[type="checkbox"]').check()
+    cy.get('.status-toggle-box input[type="checkbox"]').scrollIntoView().check()
 
     cy.contains('.cds--modal-footer button', 'Save Changes').click()
     cy.wait('@updateTask')

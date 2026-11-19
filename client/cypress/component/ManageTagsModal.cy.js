@@ -10,15 +10,17 @@ describe('ManageTagsModal Component', () => {
       { _id: 'tag-2', name: 'Testing', color: 'green' }
     ]
 
-    cy.intercept('GET', '**/api/tags*', (req) => {
-      const page = Number(req.query.page) || 1
+    cy.intercept('GET', /\/api\/tags/, (req) => {
+      const skip = Number(req.query.skip) || 0
+      const limit = Number(req.query.limit) || 5
+      const page = Math.floor(skip / limit) + 1
       req.reply({
         statusCode: 200,
         body: {
           tags: mockTags,
           total: mockTags.length,
           page,
-          limit: 5
+          limit
         }
       })
     }).as('fetchTags')
@@ -27,7 +29,7 @@ describe('ManageTagsModal Component', () => {
   it('creates a new tag, emits tags-changed, and renders it in the table', () => {
     const onTagsChangedSpy = cy.spy().as('onTagsChangedSpy')
 
-    cy.intercept('POST', '**/api/tags*', (req) => {
+    cy.intercept('POST', /\/api\/tags/, (req) => {
       const created = {
         _id: 'tag-3',
         name: req.body.name,
@@ -49,7 +51,7 @@ describe('ManageTagsModal Component', () => {
     cy.contains('td .cds--tag', 'Testing').should('be.visible')
 
     // Create a new tag
-    cy.get('.tag-create-row input[type="text"]').type('Urgent')
+    cy.get('.tag-create-row input[type="text"]').scrollIntoView().type('Urgent')
     cy.get('.tag-create-row select').select('purple')
     cy.contains('.tag-create-row button', 'Add Tag').click()
 
@@ -63,7 +65,7 @@ describe('ManageTagsModal Component', () => {
   it('edits an existing tag inline and cancels or saves changes', () => {
     const onTagsChangedSpy = cy.spy().as('onTagsChangedSpy')
 
-    cy.intercept('PATCH', '**/api/tags/tag-1', (req) => {
+    cy.intercept('PATCH', /\/api\/tags\/tag-1/, (req) => {
       const target = mockTags.find((t) => t._id === 'tag-1')
       Object.assign(target, req.body)
       req.reply({ statusCode: 200, body: target })
@@ -80,7 +82,10 @@ describe('ManageTagsModal Component', () => {
 
     // Enter inline edit mode for "Backend"
     cy.contains('tr', 'Backend').find('button[title="Edit tag"]').click()
-    cy.get('.inline-edit-row input[type="text"]').should('have.value', 'Backend').clear().type('API Core')
+    cy.get('.inline-edit-row input[type="text"]')
+      .should('have.value', 'Backend')
+      .clear()
+      .type('API Core')
     cy.get('.inline-edit-row select').select('teal')
 
     // Save edit
@@ -95,7 +100,7 @@ describe('ManageTagsModal Component', () => {
   it('deletes a tag and emits tags-changed', () => {
     const onTagsChangedSpy = cy.spy().as('onTagsChangedSpy')
 
-    cy.intercept('DELETE', '**/api/tags/tag-2', (req) => {
+    cy.intercept('DELETE', /\/api\/tags\/tag-2/, (req) => {
       mockTags = mockTags.filter((t) => t._id !== 'tag-2')
       req.reply({ statusCode: 200, body: { _id: 'tag-2' } })
     }).as('deleteTag')
@@ -118,16 +123,17 @@ describe('ManageTagsModal Component', () => {
   })
 
   it('handles pagination controls and displays store errors', () => {
-    cy.intercept('GET', '**/api/tags*', (req) => {
+    cy.intercept('GET', /\/api\/tags/, (req) => {
       const skip = Number(req.query.skip) || 0
       const limit = Number(req.query.limit) || 5
+      const page = Math.floor(skip / limit) + 1
       req.reply({
         statusCode: 200,
         body: {
-          tags: skip === 0 ? mockTags : [{ _id: 'tag-6', name: 'Page 2 Tag', color: 'cyan' }],
-          total: 8,
-          limit,
-          skip
+          tags: page === 1 ? mockTags : [{ _id: 'tag-6', name: 'Page 2 Tag', color: 'cyan' }],
+          total: 6,
+          page,
+          limit: 5
         }
       })
     }).as('fetchPaginatedTags')

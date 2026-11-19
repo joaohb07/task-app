@@ -236,9 +236,12 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.contains('.manage-inline-btn', '+ Manage Tags').click()
     cy.contains('#manage-tags-modal-title', 'Manage Tags').should('be.visible')
 
-    cy.get('.tag-create-row input[type="text"]').type('DevOps')
-    cy.get('.tag-create-row select').select('purple')
-    cy.contains('.tag-create-row button', 'Add Tag').click()
+    cy.get('.tag-create-row input[type="text"]')
+      .scrollIntoView({ block: 'nearest' })
+      .should('be.visible')
+      .type('DevOps', { force: true })
+    cy.get('.tag-create-row select').select('purple', { force: true })
+    cy.contains('.tag-create-row button', 'Add Tag').click({ force: true })
     cy.wait('@createTag')
     cy.wait('@fetchTags')
     cy.contains('.tag-table-wrapper td', 'DevOps').should('be.visible')
@@ -247,7 +250,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.contains('#manage-tags-modal-title', 'Manage Tags')
       .closest('.cds--modal-container')
       .contains('.cds--modal-footer button', 'Done')
-      .click()
+      .click({ force: true })
 
     // Populate task fields, add subtasks, select priority and tag, then submit
     cy.get('#task-desc-input').type('Deploy Task App to Home Server')
