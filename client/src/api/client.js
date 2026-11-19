@@ -5,7 +5,7 @@ import axios from 'axios'
  * Automatically includes the JWT token from localStorage in the Authorization header for authenticated requests.
  */
 const api = axios.create({
-  baseURL: '/api'
+  baseURL: 'api'
 })
 
 /**
