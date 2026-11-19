@@ -291,13 +291,6 @@ const isOverdue = (task) => {
       @clear="taskStore.clearSearch"
     />
 
-    <!-- Manage Tags Modal -->
-    <ManageTagsModal
-      :open="isTagsModalOpen"
-      @close="isTagsModalOpen = false"
-      @tags-changed="handleTagsChanged"
-    />
-
     <!-- Create / Edit / View Task Modal -->
     <TaskModal
       :open="isTaskModalOpen"
@@ -306,6 +299,13 @@ const isOverdue = (task) => {
       @update:mode="taskModalMode = $event"
       @close="isTaskModalOpen = false"
       @open-tags="isTagsModalOpen = true"
+    />
+
+    <!-- Manage Tags Modal -->
+    <ManageTagsModal
+      :open="isTagsModalOpen"
+      @close="isTagsModalOpen = false"
+      @tags-changed="handleTagsChanged"
     />
 
     <!-- Workspace Container (Table or Kanban) -->
