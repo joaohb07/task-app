@@ -28,11 +28,11 @@ const techStack = [
       <div class="about-topbar">
         <button
           type="button"
-          class="cds--btn cds--btn--ghost cds--btn--sm"
+          class="cds--btn cds--btn--ghost cds--btn--sm back-btn"
           @click="router.back()"
         >
-          <ArrowLeft class="cds--btn__icon" />
-          <span>Back</span>
+          <ArrowLeft class="back-btn-icon" />
+          <span class="back-btn-label">Back</span>
         </button>
       </div>
 
@@ -111,6 +111,29 @@ const techStack = [
 </template>
 
 <style scoped>
+.about-topbar {
+  display: flex;
+  align-items: center;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.75rem;
+}
+
+.back-btn-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.back-btn-label {
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
 .about-page {
   min-height: calc(100vh - 48px);
   padding: 2rem 1rem 3rem;
