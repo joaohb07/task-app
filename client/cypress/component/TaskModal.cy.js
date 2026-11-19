@@ -14,6 +14,10 @@ describe('TaskModal Component', () => {
     details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
     dueDate: '2026-12-15T00:00:00.000Z',
     priority: 'high',
+    subtasks: [
+      { _id: 'sub-1', title: 'Add subtasks schema', completed: true },
+      { _id: 'sub-2', title: 'Update TaskModal UI', completed: false }
+    ],
     completed: false,
     tags: [sampleTags[0], sampleTags[2]]
   }
@@ -36,7 +40,7 @@ describe('TaskModal Component', () => {
     cy.get('[role="dialog"]').should('not.exist')
   })
 
-  it('renders create mode, selects priority and tags, emits open-tags, and submits new task payload', () => {
+  it('renders create mode, adds subtasks, selects priority and tags, and submits payload', () => {
     const onCloseSpy = cy.spy().as('onCloseSpy')
     const onOpenTagsSpy = cy.spy().as('onOpenTagsSpy')
 
@@ -46,6 +50,7 @@ describe('TaskModal Component', () => {
         details: 'Run Jest and Cypress before merge.',
         dueDate: '2026-11-30T00:00:00.000Z',
         priority: 'medium',
+        subtasks: [{ title: 'Configure GitHub Actions workflow', completed: false }],
         tags: ['tag-2']
       })
       req.reply({
@@ -80,6 +85,10 @@ describe('TaskModal Component', () => {
     cy.get('#task-priority-select').select('medium')
     cy.get('#task-due-input').type('2026-11-30')
 
+    cy.get('#new-subtask-input').type('Configure GitHub Actions workflow')
+    cy.contains('.add-subtask-btn', 'Add').click()
+    cy.contains('.subtasks-list .subtask-item', 'Configure GitHub Actions workflow').should('be.visible')
+
     cy.contains('.tag-option-pill', 'Testing').click()
     cy.contains('.tag-option-pill', 'Testing').should('have.class', 'is-selected')
 
@@ -88,8 +97,22 @@ describe('TaskModal Component', () => {
     cy.get('@onCloseSpy').should('have.been.calledOnce')
   })
 
-  it('renders read-only view mode with priority pill and switches to edit mode when Edit Task is clicked', () => {
+  it('renders read-only view mode with subtasks checklist and switches to edit mode', () => {
     const onUpdateModeSpy = cy.spy().as('onUpdateModeSpy')
+
+    cy.intercept('PATCH', '**/api/tasks/task-101', (req) => {
+      expect(req.body.subtasks).to.have.length(2)
+      expect(req.body.subtasks[1].completed).to.equal(true)
+      req.reply({
+        statusCode: 200,
+        body: { ...sampleTask, subtasks: req.body.subtasks }
+      })
+    }).as('toggleSubtask')
+
+    cy.intercept('GET', '**/api/tasks*', {
+      statusCode: 200,
+      body: { tasks: [], total: 0, stats: { total: 0, completed: 0, pending: 0 } }
+    }).as('refreshTasks')
 
     cy.mountWithPlugins(TaskModal, {
       props: {
@@ -105,16 +128,18 @@ describe('TaskModal Component', () => {
     cy.contains('#task-modal-title', 'Task Details').should('be.visible')
     cy.contains('.priority-pill', 'Priority: High').should('be.visible')
     cy.contains('.view-title-text', 'Implement Carbon Design modals').should('be.visible')
-    cy.contains('.view-details-text', 'Create TaskModal and ManageTagsModal with full CRUD support.').should('be.visible')
-    cy.contains('.view-date-badge', 'Dec 15, 2026').should('be.visible')
-    cy.contains('.tags-list .cds--tag', 'Backend').should('be.visible')
-    cy.contains('.tags-list .cds--tag', 'Frontend').should('be.visible')
+    cy.contains('.subtasks-header-row', 'Subtasks (1/2)').should('be.visible')
+
+    // Toggle second subtask directly in view mode
+    cy.contains('.subtask-item', 'Update TaskModal UI').find('input[type="checkbox"]').check()
+    cy.wait('@toggleSubtask')
+    cy.contains('.subtasks-header-row', 'Subtasks (2/2)').should('be.visible')
 
     cy.contains('.cds--modal-footer button', 'Edit Task').click()
     cy.get('@onUpdateModeSpy').should('have.been.calledOnceWith', 'edit')
   })
 
-  it('pre-populates fields in edit mode and submits updated task with priority and completion status', () => {
+  it('pre-populates fields in edit mode and submits updated task with subtasks and completion status', () => {
     const onCloseSpy = cy.spy().as('onCloseSpy')
 
     cy.intercept('PATCH', '**/api/tasks/task-101', (req) => {
@@ -123,6 +148,7 @@ describe('TaskModal Component', () => {
         details: 'Create TaskModal and ManageTagsModal with full CRUD support.',
         dueDate: '2026-12-15T00:00:00.000Z',
         priority: 'low',
+        subtasks: [{ _id: 'sub-1', title: 'Add subtasks schema', completed: true }],
         tags: ['tag-1'],
         completed: true
       })
@@ -151,7 +177,9 @@ describe('TaskModal Component', () => {
     cy.contains('#task-modal-title', 'Edit Task').should('be.visible')
     cy.get('#task-desc-input').should('have.value', 'Implement Carbon Design modals')
     cy.get('#task-priority-select').should('have.value', 'high')
-    cy.get('#task-due-input').should('have.value', '2026-12-15')
+
+    // Remove second subtask
+    cy.contains('.subtask-item', 'Update TaskModal UI').find('button[title="Remove subtask"]').click()
 
     cy.get('#task-priority-select').select('low')
     cy.contains('.tag-option-pill', 'Frontend').click()

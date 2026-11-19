@@ -391,14 +391,23 @@ const isOverdue = (task) => {
                 />
               </td>
               <td>
-                <button
-                  type="button"
-                  class="task-title-btn"
-                  :class="{ 'task-done-text': task.completed }"
-                  @click="openViewTask(task)"
-                >
-                  {{ task.description }}
-                </button>
+                <div class="task-title-row">
+                  <button
+                    type="button"
+                    class="task-title-btn"
+                    :class="{ 'task-done-text': task.completed }"
+                    @click="openViewTask(task)"
+                  >
+                    {{ task.description }}
+                  </button>
+                  <span
+                    v-if="task.subtasks && task.subtasks.length > 0"
+                    class="subtask-counter-badge"
+                    title="Subtasks progress"
+                  >
+                    {{ task.subtasks.filter((s) => s.completed).length }}/{{ task.subtasks.length }}
+                  </span>
+                </div>
                 <p v-if="task.details" class="task-details-preview">
                   {{ task.details }}
                 </p>
@@ -610,6 +619,25 @@ const isOverdue = (task) => {
   vertical-align: middle;
 }
 
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.subtask-counter-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--cds-text-secondary);
+  background-color: var(--cds-layer-accent);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: 999px;
+}
+
 .task-title-btn {
   background: none;
   border: none;
@@ -641,7 +669,7 @@ const isOverdue = (task) => {
   text-overflow: ellipsis;
 }
 
-/* Priority Color Tokens: Branco / Amarelo / Laranja / Vermelho */
+/* Priority Color Tokens: White / Yellow / Orange / Red */
 .priority-pill--none {
   background-color: #ffffff;
   color: #161616;

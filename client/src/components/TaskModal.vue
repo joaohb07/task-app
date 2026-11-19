@@ -6,17 +6,14 @@ import Close from '@carbon/icons-vue/es/close/16'
 import Edit from '@carbon/icons-vue/es/edit/16'
 import Checkmark from '@carbon/icons-vue/es/checkmark/16'
 import Calendar from '@carbon/icons-vue/es/calendar/16'
+import Add from '@carbon/icons-vue/es/add/16'
+import TrashCan from '@carbon/icons-vue/es/trash-can/16'
 
 /**
- * Props:
- * - open: Boolean indicating if the modal is open.
- * - mode: String indicating the modal mode ('create', 'edit', 'view').
- * - task: Object representing the task to edit or view (optional).
- *
- * Emits:
- * - close: Emitted when the modal should be closed.
- * - update:mode: Emitted to change the modal mode (e.g., from 'view' to 'edit').
- * - open-tags: Emitted to open the tag management interface.
+ * Props for the TaskModal component.
+ * - open: Boolean indicating whether the modal is open.
+ * - mode: String indicating the mode of the modal ('create', 'edit', or 'view').
+ * - task: Object representing the task to be edited or viewed (optional).
  */
 const props = defineProps({
   open: {
@@ -33,31 +30,45 @@ const props = defineProps({
   }
 })
 
+/**
+ * Emits events from the TaskModal component.
+ * - close: Emitted when the modal is closed.
+ * - update:mode: Emitted to update the mode of the modal (e.g., switching to 'edit' mode).
+ * - open-tags: Emitted to trigger the opening of the tag management interface.
+ */
 const emit = defineEmits(['close', 'update:mode', 'open-tags'])
 
+/**
+ * Local state variables for the TaskModal component.
+ * These variables are used to manage the form fields and their values.
+ */
 const taskStore = useTaskStore()
 const tagStore = useTagStore()
 
 /**
- * Reactive state variables for the task form.
- * - description: The task title.
- * - details: Additional notes or details for the task.
- * - dueDate: The due date in 'YYYY-MM-DD' format.
- * - priority: The task priority ('none', 'low', 'medium', 'high').
- * - selectedTagIds: Array of selected tag IDs for the task.
- * - completed: Boolean indicating if the task is completed (only for edit mode).
- * - submitting: Boolean indicating if the form submission is in progress.
+ * Reactive references for form fields and state.
+ * - description: The title/description of the task.
+ * - details: Additional details or notes for the task.
+ * - dueDate: The due date of the task in YYYY-MM-DD format.
+ * - priority: The priority level of the task ('none', 'low', 'medium', 'high').
+ * - subtasks: An array of subtasks associated with the task.
+ * - newSubtaskTitle: The title of a new subtask being added.
+ * - selectedTagIds: An array of selected tag IDs for the task.
+ * - completed: Boolean indicating whether the task is completed (used in edit mode).
+ * - submitting: Boolean indicating whether the form is currently being submitted.
  */
 const description = ref('')
 const details = ref('')
 const dueDate = ref('')
 const priority = ref('none')
+const subtasks = ref([])
+const newSubtaskTitle = ref('')
 const selectedTagIds = ref([])
 const completed = ref(false)
 const submitting = ref(false)
 
 /**
- * Priority options for the task form.
+ * Options for the priority select input.
  * Each option has a value and a label for display.
  */
 const priorityOptions = [
@@ -68,7 +79,8 @@ const priorityOptions = [
 ]
 
 /**
- * Mapping of priority values to display labels for the view mode.
+ * Mapping of priority values to their corresponding display labels.
+ * Used for displaying the priority in view mode.
  */
 const priorityLabelMap = {
   none: 'None',
@@ -78,21 +90,44 @@ const priorityLabelMap = {
 }
 
 /**
- * Computed properties for the modal.
- * - availableTags: List of all tags from the tag store.
- * - isReadOnly: Boolean indicating if the modal is in view mode.
- * - modalHeading: The heading text based on the modal mode.
- * - modalLabel: The label text for the modal based on the mode.
+ * Computed properties for available tags, read-only mode, completed subtasks count, subtask progress percentage, modal heading, and modal label.
+ * These properties are derived from the current state of the component and props.
  */
 const availableTags = computed(() => tagStore.allTags || [])
+/**
+ * Determines if the modal is in read-only mode based on the current mode prop.
+ * Returns true if the mode is 'view', indicating that the form fields should be disabled.
+ */
 const isReadOnly = computed(() => props.mode === 'view')
-
+/**
+ * Computes the number of completed subtasks from the subtasks array.
+ * Filters the subtasks to count how many have their 'completed' property set to true.
+ */
+const completedSubtasksCount = computed(
+  () => subtasks.value.filter((st) => st.completed).length
+)
+/**
+ * Computes the percentage of completed subtasks relative to the total number of subtasks.
+ * Returns 0 if there are no subtasks to avoid division by zero.
+ * The result is rounded to the nearest whole number for display purposes.
+ */
+const subtaskProgressPercent = computed(() => {
+  if (subtasks.value.length === 0) return 0
+  return Math.round((completedSubtasksCount.value / subtasks.value.length) * 100)
+})
+/**
+ * Computes the heading text for the modal based on the current mode prop.
+ * Returns 'Task Details' for view mode, 'Edit Task' for edit mode, and 'New Task' for create mode.
+ */
 const modalHeading = computed(() => {
   if (props.mode === 'view') return 'Task Details'
   if (props.mode === 'edit') return 'Edit Task'
   return 'New Task'
 })
-
+/**
+ * Computes the label text for the modal based on the current mode prop.
+ * Returns 'INSPECT' for view mode, 'UPDATE' for edit mode, and 'CREATE' for create mode.
+ */
 const modalLabel = computed(() => {
   if (props.mode === 'view') return 'INSPECT'
   if (props.mode === 'edit') return 'UPDATE'
@@ -100,9 +135,10 @@ const modalLabel = computed(() => {
 })
 
 /**
- * Converts an ISO date string to 'YYYY-MM-DD' format for input fields.
+ * Converts an ISO date string to a format suitable for the HTML date input.
+ * If the input is null or undefined, returns an empty string.
  * @param {string} isoString - The ISO date string to convert.
- * @returns {string} - The formatted date string or an empty string if input is invalid.
+ * @returns {string} - The formatted date string (YYYY-MM-DD) or an empty string.
  */
 const toInputDate = (isoString) => {
   if (!isoString) return ''
@@ -110,9 +146,10 @@ const toInputDate = (isoString) => {
 }
 
 /**
- * Formats an ISO date string for display in the view mode.
+ * Formats an ISO date string into a human-readable format for display.
+ * If the input is null or undefined, returns 'No due date'.
  * @param {string} isoString - The ISO date string to format.
- * @returns {string} - The formatted date string or 'No due date' if input is invalid.
+ * @returns {string} - The formatted date string or 'No due date'.
  */
 const formatDisplayDate = (isoString) => {
   if (!isoString) return 'No due date'
@@ -126,16 +163,23 @@ const formatDisplayDate = (isoString) => {
 }
 
 /**
- * Synchronizes the form fields with the provided task prop when in edit or view mode.
- * Resets the form fields to default values when creating a new task.
+ * Synchronizes the form fields with the provided task data when the modal is opened.
+ * If a task is provided and the mode is 'edit' or 'view', it populates the form fields with the task's details.
+ * If no task is provided or the mode is 'create', it resets the form fields to their default values.
  */
 const syncFormFromProps = () => {
   taskStore.error = null
+  newSubtaskTitle.value = ''
   if (props.task && (props.mode === 'edit' || props.mode === 'view')) {
     description.value = props.task.description || ''
     details.value = props.task.details || ''
     dueDate.value = toInputDate(props.task.dueDate)
     priority.value = props.task.priority || 'none'
+    subtasks.value = (props.task.subtasks || []).map((st) => ({
+      ...(st._id ? { _id: st._id } : {}),
+      title: st.title,
+      completed: Boolean(st.completed)
+    }))
     selectedTagIds.value = (props.task.tags || []).map((t) =>
       typeof t === 'object' ? t._id : t
     )
@@ -145,13 +189,15 @@ const syncFormFromProps = () => {
     details.value = ''
     dueDate.value = ''
     priority.value = 'none'
+    subtasks.value = []
     selectedTagIds.value = []
     completed.value = false
   }
 }
 
 /**
- * Watches for changes in the 'open' prop to fetch all tags when the modal is opened.
+ * Watches for changes in the modal's open state.
+ * When the modal is opened, it fetches all available tags from the store.
  * This ensures that the tag list is up-to-date whenever the modal is displayed.
  */
 watch(
@@ -165,8 +211,9 @@ watch(
 )
 
 /**
- * Watches for changes in the 'open', 'mode', and 'task' props to synchronize the form fields.
- * When the modal is opened, it populates the form with the task data if in edit or view mode.
+ * Watches for changes in the modal's open state, mode, or task prop.
+ * When the modal is opened, it synchronizes the form fields with the provided task data.
+ * This ensures that the form reflects the current task details when editing or viewing.
  */
 watch(
   () => [props.open, props.mode, props.task],
@@ -179,10 +226,43 @@ watch(
 )
 
 /**
- * Toggles the selection of a tag by its ID.
+ * Adds a new subtask to the list if the input is not empty and the form is not in read-only mode.
+ * Trims the input value before adding and clears the input field after adding.
+ */
+const addSubtask = () => {
+  const trimmed = newSubtaskTitle.value.trim()
+  if (!trimmed || isReadOnly.value) return
+  subtasks.value.push({ title: trimmed, completed: false })
+  newSubtaskTitle.value = ''
+}
+
+/**
+ * Removes a subtask from the list by its index.
+ * Does nothing if the form is in read-only mode.
+ * @param {number} index - The index of the subtask to remove.
+ */
+const removeSubtask = (index) => {
+  if (isReadOnly.value) return
+  subtasks.value.splice(index, 1)
+}
+
+/**
+ * Handles the toggling of a subtask's completed status in view mode.
+ * Updates the local state and calls the store method to persist the change.
+ * Does nothing if the form is in read-only mode or if no task is provided.
+ * @param {number} index - The index of the subtask to toggle.
+ */
+const handleViewSubtaskToggle = async (index) => {
+  if (!props.task) return
+  subtasks.value[index].completed = !subtasks.value[index].completed
+  await taskStore.toggleSubtask(props.task, index)
+}
+
+/**
+ * Toggles the selection of a tag in the form.
  * If the tag is already selected, it will be removed from the selection.
  * If the tag is not selected, it will be added to the selection.
- * This function does nothing if the modal is in read-only mode.
+ * Does nothing if the form is in read-only mode.
  * @param {string} tagId - The ID of the tag to toggle.
  */
 const toggleTagSelection = (tagId) => {
@@ -196,12 +276,19 @@ const toggleTagSelection = (tagId) => {
 
 /**
  * Handles the form submission for creating or updating a task.
- * Validates the input, constructs the payload, and calls the appropriate store action.
- * On success, emits the 'close' event to close the modal.
+ * Validates the input fields and constructs the payload for the API request.
+ * If in edit mode, includes the completed status in the payload.
+ * Calls the appropriate store method to create or update the task.
+ * Closes the modal on successful submission.
  */
 const handleSubmit = async () => {
   const trimmedDesc = description.value.trim()
   if (!trimmedDesc || isReadOnly.value) return
+
+  // If user typed a subtask in the input and clicked Save/Create directly, include it
+  if (newSubtaskTitle.value.trim()) {
+    addSubtask()
+  }
 
   submitting.value = true
   const payload = {
@@ -209,6 +296,11 @@ const handleSubmit = async () => {
     details: details.value.trim(),
     dueDate: dueDate.value ? new Date(`${dueDate.value}T00:00:00.000Z`).toISOString() : null,
     priority: priority.value,
+    subtasks: subtasks.value.map((st) => ({
+      ...(st._id ? { _id: st._id } : {}),
+      title: st.title.trim(),
+      completed: Boolean(st.completed)
+    })),
     tags: selectedTagIds.value
   }
 
@@ -291,6 +383,44 @@ const handleSubmit = async () => {
             </p>
           </div>
 
+          <!-- Subtasks Checklist in View Mode -->
+          <div class="view-field">
+            <div class="subtasks-header-row">
+              <span class="cds--label">
+                Subtasks ({{ completedSubtasksCount }}/{{ subtasks.length }})
+              </span>
+              <span v-if="subtasks.length > 0" class="subtask-pct-label">
+                {{ subtaskProgressPercent }}%
+              </span>
+            </div>
+
+            <div v-if="subtasks.length > 0" class="subtask-progress-track">
+              <div
+                class="subtask-progress-fill"
+                :style="{ width: `${subtaskProgressPercent}%` }"
+              />
+            </div>
+
+            <ul v-if="subtasks.length > 0" class="subtasks-list">
+              <li
+                v-for="(st, idx) in subtasks"
+                :key="st._id || idx"
+                class="subtask-item"
+              >
+                <label class="subtask-check-label">
+                  <input
+                    type="checkbox"
+                    :checked="st.completed"
+                    class="task-checkbox"
+                    @change="handleViewSubtaskToggle(idx)"
+                  />
+                  <span :class="{ 'subtask-done-text': st.completed }">{{ st.title }}</span>
+                </label>
+              </li>
+            </ul>
+            <p v-else class="muted-hint">No subtasks added.</p>
+          </div>
+
           <div class="view-field">
             <span class="cds--label">Tags</span>
             <div v-if="task.tags && task.tags.length > 0" class="tags-list">
@@ -327,7 +457,7 @@ const handleSubmit = async () => {
             <textarea
               id="task-details-input"
               v-model="details"
-              rows="4"
+              rows="3"
               maxlength="2000"
               placeholder="Add acceptance criteria, links, or notes..."
               class="cds--text-area"
@@ -357,6 +487,53 @@ const handleSubmit = async () => {
                 class="cds--text-input"
               />
             </div>
+          </div>
+
+          <!-- Subtasks Builder -->
+          <div class="cds--form-item">
+            <label for="new-subtask-input" class="cds--label">
+              Subtasks ({{ completedSubtasksCount }}/{{ subtasks.length }})
+            </label>
+            <div class="subtask-add-row">
+              <input
+                id="new-subtask-input"
+                v-model="newSubtaskTitle"
+                type="text"
+                maxlength="150"
+                placeholder="Add a step or checklist item..."
+                class="cds--text-input cds--text-input--sm"
+                @keydown.enter.prevent="addSubtask"
+              />
+              <button
+                type="button"
+                class="cds--btn cds--btn--tertiary cds--btn--sm add-subtask-btn"
+                @click="addSubtask"
+              >
+                <span>Add</span>
+                <Add class="cds--btn__icon" />
+              </button>
+            </div>
+
+            <ul v-if="subtasks.length > 0" class="subtasks-list">
+              <li
+                v-for="(st, idx) in subtasks"
+                :key="st._id || idx"
+                class="subtask-item"
+              >
+                <label class="subtask-check-label">
+                  <input v-model="st.completed" type="checkbox" class="task-checkbox" />
+                  <span :class="{ 'subtask-done-text': st.completed }">{{ st.title }}</span>
+                </label>
+                <button
+                  type="button"
+                  class="cds--btn cds--btn--ghost cds--btn--icon-only cds--btn--sm"
+                  title="Remove subtask"
+                  @click="removeSubtask(idx)"
+                >
+                  <TrashCan />
+                </button>
+              </li>
+            </ul>
           </div>
 
           <div v-if="mode === 'edit'" class="cds--form-item status-toggle-box">
@@ -434,7 +611,7 @@ const handleSubmit = async () => {
 
 <style scoped>
 .modal-box {
-  max-width: 580px;
+  max-width: 600px;
 }
 
 .modal-body {
@@ -466,13 +643,82 @@ const handleSubmit = async () => {
 
 .task-form .cds--text-area {
   resize: vertical;
-  min-height: 96px;
+  min-height: 76px;
 }
 
 .form-row-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+.subtask-add-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.add-subtask-btn {
+  flex-shrink: 0;
+}
+
+.subtasks-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.subtask-pct-label {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+}
+
+.subtask-progress-track {
+  width: 100%;
+  height: 4px;
+  background-color: var(--cds-border-subtle);
+  margin: 0.25rem 0 0.5rem;
+}
+
+.subtask-progress-fill {
+  height: 100%;
+  background-color: var(--cds-support-success);
+  transition: width 0.2s ease;
+}
+
+.subtasks-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--cds-layer);
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.subtask-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--cds-text-primary);
+  cursor: pointer;
+  flex: 1;
+}
+
+.subtask-done-text {
+  text-decoration: line-through;
+  color: var(--cds-text-secondary);
 }
 
 .checkbox-inline {
@@ -487,6 +733,7 @@ const handleSubmit = async () => {
   width: 18px;
   height: 18px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .tags-label-row {

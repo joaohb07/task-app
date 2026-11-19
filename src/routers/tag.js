@@ -8,6 +8,12 @@ const router = new express.Router()
 /** 
  * Create a new tag,
  * allows users to create a new tag with a unique name and an optional color.
+ * @route POST /tags
+ * @access private
+ * @bodyParam {string} name - The name of the tag (required).
+ * @bodyParam {string} [color] - Optional color for the tag (default is 'blue').
+ * @returns {Object} - The created tag object.
+ * @throws {Error} - Throws an error if validation fails or tag creation is unsuccessful.
  */
 router.post('/tags', auth, async (req, res) => {
   const name = req.body.name?.trim()
@@ -41,6 +47,13 @@ router.post('/tags', auth, async (req, res) => {
 /** 
  * List tags with pagination & search,
  * allows users to fetch their tags with optional search by name, and supports pagination through limit and skip query parameters.
+ * @route GET /tags
+ * @access private
+ * @queryParam {string} [search] - Optional search term to filter tags by name (case-insensitive).
+ * @queryParam {number} [limit=50] - Limit the number of tags returned (default is 50).
+ * @queryParam {number} [skip=0] - Skip a number of tags for pagination (default is 0).
+ * @returns {Object} - An object containing the list of tags and the total count.
+ * @throws {Error} - Throws an error if fetching tags fails.
  */
 router.get('/tags', auth, async (req, res) => {
   const match = { author: req.user._id }
@@ -67,6 +80,13 @@ router.get('/tags', auth, async (req, res) => {
 /** 
  * Update tag by ID,
  * allows updating the name and color of a tag, ensuring that the new name is unique for the user and not empty.
+ * @route PATCH /tags/:id
+ * @access private
+ * @param {string} id - The ID of the tag to update.
+ * @bodyParam {string} [name] - The new name for the tag (optional).
+ * @bodyParam {string} [color] - The new color for the tag (optional).
+ * @returns {Object} - The updated tag object.
+ * @throws {Error} - Throws an error if validation fails, the tag is not found, or the update is unsuccessful.
 */
 router.patch('/tags/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body)
@@ -116,6 +136,11 @@ router.patch('/tags/:id', auth, async (req, res) => {
  * Delete tag by ID and detach it from user's tasks,
  * also removes the tag from any tasks that reference it to maintain data integrity.
  * This ensures that when a tag is deleted, it does not leave orphaned references in tasks.
+ * @route DELETE /tags/:id
+ * @access private
+ * @param {string} id - The ID of the tag to delete.
+ * @returns {Object} - The deleted tag object.
+ * @throws {Error} - Throws an error if the tag is not found or deletion fails.
  */
 router.delete('/tags/:id', auth, async (req, res) => {
   try {

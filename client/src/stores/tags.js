@@ -35,6 +35,8 @@ export const useTagStore = defineStore('tags', {
      * Fetches a paginated list of tags from the server.
      * Updates the items and total state properties with the fetched data.
      * Handles loading and error states during the fetch operation.
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async fetchTags() {
       this.loading = true
@@ -58,6 +60,8 @@ export const useTagStore = defineStore('tags', {
      * Fetches all tags from the server without pagination.
      * Updates the allTags state property with the fetched data.
      * Handles error state during the fetch operation.
+     * @async
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async fetchAllTags() {
       try {
@@ -70,10 +74,11 @@ export const useTagStore = defineStore('tags', {
 
     /**
      * Creates a new tag on the server with the provided payload.
-     * On success, resets the page to 1 and fetches the updated list of tags.
-     * Handles error state during the create operation.
+     * On success, fetches the updated list of tags.
+     * @async
      * @param {Object} payload - The data for the new tag (e.g., name, color).
      * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async createTag(payload) {
       this.error = null
@@ -95,6 +100,7 @@ export const useTagStore = defineStore('tags', {
      * @param {string} id - The ID of the tag to update.
      * @param {Object} payload - The updated data for the tag (e.g., name, color).
      * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async updateTag(id, payload) {
       this.error = null
@@ -114,6 +120,7 @@ export const useTagStore = defineStore('tags', {
      * Handles error state during the delete operation.
      * @param {string} id - The ID of the tag to delete.
      * @returns {Promise<boolean>} - Returns true on success, false on failure.
+     * @throws {Error} - Throws an error if the API request fails.
      */
     async deleteTag(id) {
       this.error = null

@@ -1,5 +1,9 @@
 const mongoose = require('mongoose')
 
+/**
+ * Allowed priority levels for tasks.
+ * Each priority level has an associated weight for sorting and comparison purposes.
+ */
 const ALLOWED_PRIORITIES = ['none', 'low', 'medium', 'high']
 const PRIORITY_WEIGHTS = {
   none: 0,
@@ -9,8 +13,25 @@ const PRIORITY_WEIGHTS = {
 }
 
 /**
+ * Subtask schema definition for MongoDB using Mongoose.
+ * Each subtask has a title and a completion status.
+ */
+const subtaskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 150
+  },
+  completed: {
+    type: Boolean,
+    default: false
+  }
+})
+
+/**
  * Task schema definition for MongoDB using Mongoose.
- * Each task has a description, optional details, due date, priority, completion status, associated tags, and an author (user).
+ * Each task has a description, optional details, due date, priority, subtasks, completion status, associated tags, and an author (user).
  * The schema includes timestamps for creation and last update.
  */
 const taskSchema = new mongoose.Schema(
@@ -40,6 +61,10 @@ const taskSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    subtasks: {
+      type: [subtaskSchema],
+      default: []
+    },
     completed: {
       type: Boolean,
       default: false
@@ -61,6 +86,10 @@ const taskSchema = new mongoose.Schema(
   }
 )
 
+/**
+ * Pre-validation hook to set the priorityOrder based on the priority string.
+ * This ensures that tasks can be sorted by priority efficiently.
+ */
 taskSchema.pre('validate', function (next) {
   if (this.priority && PRIORITY_WEIGHTS[this.priority] !== undefined) {
     this.priorityOrder = PRIORITY_WEIGHTS[this.priority]
@@ -68,7 +97,10 @@ taskSchema.pre('validate', function (next) {
   next()
 })
 
-// Indexes to optimize queries for tasks by author, completion status, priority, and tags.
+/**
+ * Indexes for the task schema to optimize query performance.
+ * Indexes are created on author, completed status, creation date, priority order, and tags.
+ */
 taskSchema.index({ author: 1, completed: 1, createdAt: -1 })
 taskSchema.index({ author: 1, priorityOrder: -1, createdAt: -1 })
 taskSchema.index({ author: 1, tags: 1 })
