@@ -229,3 +229,33 @@ test('Should not allow userTwo to delete userOne task', async () => {
     .set('Authorization', `Bearer ${userTwo.tokens[0].token}`)
     .expect(404)
 })
+
+test('Should manage Kanban stages (todo, wip, done) and sync completed flag', async () => {
+  const createRes = await request(app)
+    .post('/api/tasks')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+      description: 'Kanban stage flow task',
+      status: 'wip'
+    })
+    .expect(201)
+
+  expect(createRes.body.status).toBe('wip')
+  expect(createRes.body.completed).toBe(false)
+
+  const doneRes = await request(app)
+    .patch(`/api/tasks/${createRes.body._id}`)
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({ status: 'done' })
+    .expect(200)
+
+  expect(doneRes.body.status).toBe('done')
+  expect(doneRes.body.completed).toBe(true)
+
+  const filterRes = await request(app)
+    .get('/api/tasks?status=done')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .expect(200)
+
+  expect(filterRes.body.tasks.some((t) => t._id === createRes.body._id)).toBe(true)
+})

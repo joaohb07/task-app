@@ -3,14 +3,14 @@ import api from '../api/client'
 
 /**
  * Task Store
- * This store manages the state and actions related to tasks in the application.
- * It provides functionality to fetch, create, update, toggle, and delete tasks,
- * as well as manage task filtering, sorting, and pagination.
+ * Manages task state, table pagination, Kanban board staging (todo/wip/done),
+ * filtering, sorting, and CRUD operations.
  */
 export const useTaskStore = defineStore('tasks', {
   /**
-   * State of the Task Store
-   * @returns {Object} - The initial state of the task store.
+   * State definition for the task store.
+   * Includes task list, pagination, filtering, sorting, and loading/error states.
+   * @returns {Object} State object for the task store.
    */
   state: () => ({
     items: [],
@@ -20,6 +20,7 @@ export const useTaskStore = defineStore('tasks', {
       completed: 0,
       pending: 0
     },
+    viewMode: 'table', // 'table' | 'kanban'
     filter: 'all', // 'all' | 'pending' | 'completed'
     selectedTag: '', // '' | tagId
     selectedPriority: '', // '' | 'none' | 'low' | 'medium' | 'high'
@@ -30,28 +31,27 @@ export const useTaskStore = defineStore('tasks', {
     error: null
   }),
 
-  /**
-   * Actions of the Task Store
-   * These actions handle asynchronous operations related to tasks, including API calls.
-   */
   actions: {
     /**
-     * Fetch tasks from the API with current filters, sorting, and pagination.
-     * Updates the store's state with the fetched tasks and statistics.
-     * @async
-     * @throws {Error} - Throws an error if the API request fails.
+     * Fetch tasks from the API using current viewMode, filters, and sort order.
+     * Updates the task list, total count, and statistics in the store.
+     * Handles loading and error states.
+     * @returns {Promise<void>}
      */
     async fetchTasks() {
       this.loading = true
       this.error = null
       try {
+        const isKanban = this.viewMode === 'kanban'
         const params = {
-          limit: this.limit,
-          skip: (this.page - 1) * this.limit,
+          limit: isKanban ? 200 : this.limit,
+          skip: isKanban ? 0 : (this.page - 1) * this.limit,
           sortBy: this.sortBy
         }
-        if (this.filter === 'completed') params.completed = 'true'
-        if (this.filter === 'pending') params.completed = 'false'
+        if (!isKanban) {
+          if (this.filter === 'completed') params.completed = 'true'
+          if (this.filter === 'pending') params.completed = 'false'
+        }
         if (this.selectedTag) params.tag = this.selectedTag
         if (this.selectedPriority) params.priority = this.selectedPriority
 
@@ -69,11 +69,21 @@ export const useTaskStore = defineStore('tasks', {
     },
 
     /**
+     * Switch between 'table' and 'kanban' views and refresh task list.
+     * @param {'table'|'kanban'} mode - Target view mode.
+     * @returns {Promise<void>}
+     */
+    async setViewMode(mode) {
+      if (this.viewMode === mode) return
+      this.viewMode = mode
+      this.page = 1
+      await this.fetchTasks()
+    },
+
+    /**
      * Create a new task.
-     * @async
-     * @param {Object} payload - The task data to create.
-     * @returns {Promise<boolean>} - A promise resolving to true if the task was created successfully, false otherwise.
-     * @throws {Error} - Throws an error if the API request fails.
+     * @param {Object} payload - Task creation payload.
+     * @returns {Promise<boolean>}
      */
     async createTask(payload) {
       this.error = null
@@ -89,12 +99,10 @@ export const useTaskStore = defineStore('tasks', {
     },
 
     /**
-     * Update an existing task.
-     * @async
-     * @param {string} id - The ID of the task to update.
-     * @param {Object} payload - The updated task data.
-     * @returns {Promise<Object|boolean>} - A promise resolving to the updated task data if successful, false otherwise.
-     * @throws {Error} - Throws an error if the API request fails.
+     * Update an existing task by ID.
+     * @param {string} id - Task ID.
+     * @param {Object} payload - Fields to update.
+     * @returns {Promise<Object|boolean>}
      */
     async updateTask(id, payload) {
       this.error = null
@@ -109,23 +117,35 @@ export const useTaskStore = defineStore('tasks', {
     },
 
     /**
+     * Move a task to a target Kanban stage ('todo' | 'wip' | 'done').
+     * @param {Object} task - Task object to move.
+     * @param {'todo'|'wip'|'done'} status - Destination stage.
+     */
+    async moveTaskStage(task, status) {
+      const currentStatus = task.status || (task.completed ? 'done' : 'todo')
+      if (currentStatus === status) return
+      await this.updateTask(task._id, {
+        status,
+        completed: status === 'done'
+      })
+    },
+
+    /**
      * Toggle the completion status of a task.
-     * @async
-     * @param {Object} task - The task to toggle.
-     * @returns {Promise<void>} - A promise resolving when the task is toggled.
-     * @throws {Error} - Throws an error if the API request fails.
+     * @param {Object} task - Task to toggle.
      */
     async toggleTask(task) {
-      await this.updateTask(task._id, { completed: !task.completed })
+      const nextCompleted = !task.completed
+      await this.updateTask(task._id, {
+        completed: nextCompleted,
+        status: nextCompleted ? 'done' : 'todo'
+      })
     },
 
     /**
      * Toggle the completion status of a subtask.
-     * @async
-     * @param {Object} task - The task containing the subtask.
-     * @param {number} subtaskIndex - The index of the subtask to toggle.
-     * @returns {Promise<Object|boolean>} - A promise resolving to the updated task data if successful, false otherwise.
-     * @throws {Error} - Throws an error if the API request fails.
+     * @param {Object} task - Parent task object.
+     * @param {number} subtaskIndex - Index of the subtask to toggle.
      */
     async toggleSubtask(task, subtaskIndex) {
       const updatedSubtasks = (task.subtasks || []).map((st, idx) => ({
@@ -138,10 +158,8 @@ export const useTaskStore = defineStore('tasks', {
 
     /**
      * Delete a task by ID.
-     * @async
-     * @param {string} id - The ID of the task to delete.
-     * @returns {Promise<void>} - A promise resolving when the task is deleted.
-     * @throws {Error} - Throws an error if the API request fails.
+     * @param {string} id - Task ID to delete.
+     * @returns {Promise<void>}
      */
     async deleteTask(id) {
       this.error = null

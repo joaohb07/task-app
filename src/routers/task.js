@@ -6,18 +6,15 @@ const auth = require('../middlewares/auth')
 
 const router = new express.Router()
 
-/**
- * Populate options for task queries to include tag details.
- */
 const TAG_POPULATE = { path: 'tags', select: 'name color' }
 const ALLOWED_PRIORITIES = ['none', 'low', 'medium', 'high']
+const ALLOWED_STATUSES = ['todo', 'wip', 'done']
 
 /**
  * Validates that every provided tag ID exists and belongs to the authenticated user.
  * @param {Array} tagIds - Array of tag IDs to validate.
  * @param {String} userId - The ID of the authenticated user.
  * @returns {Promise<Array>} - Resolves with an array of valid tag IDs.
- * @throws {Error} - Throws an error if validation fails.
  */
 const validateUserTags = async (tagIds, userId) => {
   if (!Array.isArray(tagIds)) {
@@ -48,7 +45,6 @@ const validateUserTags = async (tagIds, userId) => {
  * Validates and normalizes the subtasks array payload.
  * @param {Array} subtasks - Array of subtask objects to normalize.
  * @returns {Array} - Normalized array of subtask objects.
- * @throws {Error} - Throws an error if validation fails.
  */
 const normalizeSubtasks = (subtasks) => {
   if (!Array.isArray(subtasks)) {
@@ -70,19 +66,10 @@ const normalizeSubtasks = (subtasks) => {
   })
 }
 
-/** 
+/**
  * Create a new task
  * @route POST /tasks
  * @access private
- * @bodyParam {string} description - The description of the task (required).
- * @bodyParam {string} [details] - Optional detailed information about the task.
- * @bodyParam {string} [dueDate] - Optional due date for the task in ISO format.
- * @bodyParam {string} [priority] - Optional priority level ('none', 'low', 'medium', 'high').
- * @bodyParam {Array} [subtasks] - Optional array of subtasks, each with a title and completion status.
- * @bodyParam {boolean} [completed] - Optional completion status of the task (default is false).
- * @bodyParam {Array} [tags] - Optional array of tag IDs associated with the task.
- * @returns {Object} - The created task object with populated tag details.
- * @throws {Error} - Throws an error if validation fails or task creation is unsuccessful.
  */
 router.post('/tasks', auth, async (req, res) => {
   try {
@@ -96,13 +83,20 @@ router.post('/tasks', auth, async (req, res) => {
       normalizedSubtasks = normalizeSubtasks(req.body.subtasks)
     }
 
+    const initialStatus =
+      req.body.status || (req.body.completed ? 'done' : 'todo')
+
     const task = new Task({
       description: req.body.description,
       details: req.body.details ?? '',
       dueDate: req.body.dueDate || null,
       priority: req.body.priority || 'none',
+      status: initialStatus,
       subtasks: normalizedSubtasks,
-      completed: Boolean(req.body.completed),
+      completed:
+        req.body.completed !== undefined
+          ? Boolean(req.body.completed)
+          : initialStatus === 'done',
       tags: validatedTags,
       author: req.user._id
     })
@@ -116,16 +110,10 @@ router.post('/tasks', auth, async (req, res) => {
   }
 })
 
-/** 
- * List tasks with filtering (completed, tag, priority), pagination, and sorting
+/**
+ * List tasks with filtering (completed, status, tag, priority), pagination, and sorting
  * @route GET /tasks
  * @access private
- * @queryParam {boolean} [completed] - Filter tasks by completion status.
- * @queryParam {string} [tag] - Filter tasks by a specific tag ID.
- * @queryParam {string} [priority] - Filter tasks by priority level ('none', 'low', 'medium', 'high').
- * @queryParam {string} [sortBy] - Sort tasks by a field and order (e.g., 'createdAt:desc', 'priority:asc').
- * @queryParam {number} [limit=10] - Limit the number of tasks returned (default is 10).
- * @queryParam {number} [skip=0] - Skip a number of tasks for pagination (default is 0).
  */
 router.get('/tasks', auth, async (req, res) => {
   const match = { author: req.user._id }
@@ -133,6 +121,13 @@ router.get('/tasks', auth, async (req, res) => {
 
   if (req.query.completed) {
     match.completed = req.query.completed === 'true'
+  }
+
+  if (req.query.status) {
+    if (!ALLOWED_STATUSES.includes(req.query.status)) {
+      return res.status(400).send({ error: 'Invalid status filter.' })
+    }
+    match.status = req.query.status
   }
 
   if (req.query.tag) {
@@ -185,13 +180,10 @@ router.get('/tasks', auth, async (req, res) => {
   }
 })
 
-/** 
+/**
  * Get single task by ID
  * @route GET /tasks/:id
  * @access private
- * @param {string} id - The ID of the task to retrieve.
- * @returns {Object} - The task object with populated tag details.
- * @throws {Error} - Throws an error if the task is not found or retrieval fails.
  */
 router.get('/tasks/:id', auth, async (req, res) => {
   try {
@@ -207,20 +199,10 @@ router.get('/tasks/:id', auth, async (req, res) => {
   }
 })
 
-/** 
+/**
  * Update task by ID
  * @route PATCH /tasks/:id
  * @access private
- * @param {string} id - The ID of the task to update.
- * @bodyParam {string} [description] - The description of the task.
- * @bodyParam {string} [details] - Optional detailed information about the task.
- * @bodyParam {string} [dueDate] - Optional due date for the task in ISO format.
- * @bodyParam {string} [priority] - Optional priority level ('none', 'low', 'medium', 'high').
- * @bodyParam {Array} [subtasks] - Optional array of subtasks, each with a title and completion status.
- * @bodyParam {boolean} [completed] - Optional completion status of the task.
- * @bodyParam {Array} [tags] - Optional array of tag IDs associated with the task.
- * @returns {Object} - The updated task object with populated tag details.
- * @throws {Error} - Throws an error if the task is not found or update fails.
  */
 router.patch('/tasks/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body)
@@ -229,6 +211,7 @@ router.patch('/tasks/:id', auth, async (req, res) => {
     'details',
     'dueDate',
     'priority',
+    'status',
     'subtasks',
     'completed',
     'tags'
@@ -271,13 +254,10 @@ router.patch('/tasks/:id', auth, async (req, res) => {
   }
 })
 
-/** 
+/**
  * Delete task by ID
  * @route DELETE /tasks/:id
  * @access private
- * @param {string} id - The ID of the task to delete.
- * @returns {Object} - The deleted task object.
- * @throws {Error} - Throws an error if the task is not found or deletion fails.
  */
 router.delete('/tasks/:id', auth, async (req, res) => {
   try {
