@@ -8,6 +8,7 @@ import Checkmark from '@carbon/icons-vue/es/checkmark/16'
 import Close from '@carbon/icons-vue/es/close/16'
 import ChevronLeft from '@carbon/icons-vue/es/chevron--left/16'
 import ChevronRight from '@carbon/icons-vue/es/chevron--right/16'
+import '../styles/components/manage-tags-modal.scss'
 
 /**
  * Props for the ManageTagsModal component.
@@ -356,95 +357,3 @@ const changePage = (delta) => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.tags-modal-layer {
-  z-index: 9100;
-}
-
-.modal-box {
-  max-width: 560px;
-}
-
-.modal-body {
-  padding-right: 1rem;
-}
-
-.tag-create-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.color-select {
-  width: auto;
-  min-width: 115px;
-}
-
-.tag-error-msg {
-  color: var(--cds-text-error);
-  font-size: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.tag-table-wrapper {
-  border: 1px solid var(--cds-border-subtle);
-  overflow-x: auto;
-}
-
-.inline-edit-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.tag-actions-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.tag-actions-cell .cds--btn--icon-only {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tag-empty-cell {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  color: var(--cds-text-secondary);
-}
-
-.tag-pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  background-color: var(--cds-layer);
-  border: 1px solid var(--cds-border-subtle);
-  border-top: none;
-}
-
-.pagination-info {
-  font-size: 0.75rem;
-  color: var(--cds-text-secondary);
-}
-
-.pagination-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-@media (max-width: 520px) {
-  .tag-create-row {
-    flex-direction: column;
-  }
-
-  .tag-create-row .cds--btn {
-    width: 100%;
-    max-width: 100%;
-    justify-content: space-between;
-  }
-}
-</style>

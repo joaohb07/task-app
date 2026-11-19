@@ -1,5 +1,5 @@
 /**
- * End-to-End test suite for the Dashboard (task CRUD, subtasks, priorities, tags,
+ * End-to-End test suite for the Dashboard (real-time search, task CRUD, subtasks, priorities, tags,
  * status/priority/tag filtering, 3-stage Kanban board view, and deletion) and Profile management flows.
  */
 describe('Dashboard Task Management & Profile E2E', () => {
@@ -206,6 +206,22 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.wait(['@fetchTasks', '@fetchTags'])
   })
 
+  it('filters loaded tasks in real time via SearchBar and clears search', () => {
+    cy.get('.search-bar-tile input[type="search"]').type('Supertest')
+    cy.contains('.search-counter', '1 of 2 shown').should('be.visible')
+    cy.contains('td', 'Write Jest backend tests').should('be.visible')
+    cy.contains('td', 'Build Cypress E2E suite').should('not.exist')
+
+    cy.get('.search-bar-tile input[type="search"]').clear().type('non-existent-term')
+    cy.contains('.search-counter', '0 of 2 shown').should('be.visible')
+    cy.contains('.empty-cell', 'No tasks matching "non-existent-term".').should('be.visible')
+
+    cy.get('button[aria-label="Clear search"]').click()
+    cy.get('.search-bar-tile input[type="search"]').should('have.value', '')
+    cy.contains('td', 'Write Jest backend tests').should('be.visible')
+    cy.contains('td', 'Build Cypress E2E suite').should('be.visible')
+  })
+
   it('creates a task via modal with subtasks, priority, details, due date, inline tag creation, and filters/edits/deletes tasks', () => {
     // Verify initial KPI summary cards
     cy.contains('.kpi-tile', 'TOTAL TASKS').should('contain.text', '2')
@@ -220,9 +236,12 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.contains('.manage-inline-btn', '+ Manage Tags').click()
     cy.contains('#manage-tags-modal-title', 'Manage Tags').should('be.visible')
 
-    cy.get('.tag-create-row input[type="text"]').type('DevOps')
-    cy.get('.tag-create-row select').select('purple')
-    cy.contains('.tag-create-row button', 'Add Tag').click()
+    cy.get('.tag-create-row input[type="text"]')
+      .scrollIntoView({ block: 'nearest' })
+      .should('be.visible')
+      .type('DevOps', { force: true })
+    cy.get('.tag-create-row select').select('purple', { force: true })
+    cy.contains('.tag-create-row button', 'Add Tag').click({ force: true })
     cy.wait('@createTag')
     cy.wait('@fetchTags')
     cy.contains('.tag-table-wrapper td', 'DevOps').should('be.visible')
@@ -231,7 +250,7 @@ describe('Dashboard Task Management & Profile E2E', () => {
     cy.contains('#manage-tags-modal-title', 'Manage Tags')
       .closest('.cds--modal-container')
       .contains('.cds--modal-footer button', 'Done')
-      .click()
+      .click({ force: true })
 
     // Populate task fields, add subtasks, select priority and tag, then submit
     cy.get('#task-desc-input').type('Deploy Task App to Home Server')

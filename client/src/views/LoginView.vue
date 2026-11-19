@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import ArrowRight from '@carbon/icons-vue/es/arrow--right/16'
 import WarningFilled from '@carbon/icons-vue/es/warning--filled/16'
+import '../styles/views/login-view.scss'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -151,68 +152,3 @@ const handleSubmit = async () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.auth-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 3rem);
-  padding: 1.5rem;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 440px;
-  padding: 2rem;
-  border: 1px solid var(--cds-border-subtle);
-}
-
-.auth-header {
-  margin-bottom: 1.5rem;
-}
-
-.auth-header h1 {
-  margin: 0.35rem 0 0.5rem;
-}
-
-.subtitle {
-  color: var(--cds-text-secondary);
-}
-
-.auth-alert {
-  margin-bottom: 1.25rem;
-  max-width: 100%;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.15rem;
-}
-
-.submit-btn {
-  width: 100%;
-  max-width: 100%;
-  justify-content: space-between;
-  margin-top: 0.5rem;
-}
-
-.auth-footer {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--cds-border-subtle);
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--cds-text-secondary);
-}
-
-.switch-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-</style>

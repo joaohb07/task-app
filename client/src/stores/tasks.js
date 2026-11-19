@@ -4,7 +4,7 @@ import api from '../api/client'
 /**
  * Task Store
  * Manages task state, table pagination, Kanban board staging (todo/wip/done),
- * filtering, sorting, and CRUD operations.
+ * filtering, real-time client search, sorting, and CRUD operations.
  */
 export const useTaskStore = defineStore('tasks', {
   /**
@@ -24,6 +24,7 @@ export const useTaskStore = defineStore('tasks', {
     filter: 'all', // 'all' | 'pending' | 'completed'
     selectedTag: '', // '' | tagId
     selectedPriority: '', // '' | 'none' | 'low' | 'medium' | 'high'
+    searchQuery: '',
     sortBy: 'createdAt:desc',
     page: 1,
     limit: 8,
@@ -31,13 +32,37 @@ export const useTaskStore = defineStore('tasks', {
     error: null
   }),
 
-  actions: {
+  getters: {
     /**
-     * Fetch tasks from the API using current viewMode, filters, and sort order.
-     * Updates the task list, total count, and statistics in the store.
-     * Handles loading and error states.
-     * @returns {Promise<void>}
+     * Filters already loaded tasks in real time by description, details,
+     * tag names, and subtask titles.
+     * @param {Object} state - The store state.
+     * @returns {Array} - The filtered list of tasks.
      */
+    filteredItems(state) {
+      const query = state.searchQuery.trim().toLowerCase()
+      if (!query) return state.items
+
+      return state.items.filter((task) => {
+        const inDescription = task.description?.toLowerCase().includes(query)
+        const inDetails = task.details?.toLowerCase().includes(query)
+        const inTags = Array.isArray(task.tags)
+          ? task.tags.some((tag) => tag.name?.toLowerCase().includes(query))
+          : false
+        const inSubtasks = Array.isArray(task.subtasks)
+          ? task.subtasks.some((st) => st.title?.toLowerCase().includes(query))
+          : false
+
+        return inDescription || inDetails || inTags || inSubtasks
+      })
+    }
+  },
+
+  /**
+   * Actions for fetching, creating, updating, and deleting tasks.
+   * Also handles view mode changes, filtering, and search query updates.
+   */
+  actions: {
     async fetchTasks() {
       this.loading = true
       this.error = null
@@ -66,6 +91,14 @@ export const useTaskStore = defineStore('tasks', {
       } finally {
         this.loading = false
       }
+    },
+
+    setSearchQuery(query) {
+      this.searchQuery = query ?? ''
+    },
+
+    clearSearch() {
+      this.searchQuery = ''
     },
 
     /**
