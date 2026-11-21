@@ -181,7 +181,8 @@ export const useTaskStore = defineStore('tasks', {
      * @param {number} subtaskIndex - Index of the subtask to toggle.
      */
     async toggleSubtask(task, subtaskIndex) {
-      const updatedSubtasks = (task.subtasks || []).map((st, idx) => ({
+      const latestTask = this.items.find((t) => t._id === task._id) || task
+      const updatedSubtasks = (latestTask.subtasks || []).map((st, idx) => ({
         ...(st._id ? { _id: st._id } : {}),
         title: st.title,
         completed: idx === subtaskIndex ? !st.completed : Boolean(st.completed)

@@ -35,7 +35,7 @@ const tagStore = useTagStore()
 const isTagsModalOpen = ref(false)
 const isTaskModalOpen = ref(false)
 const taskModalMode = ref('create') // 'create' | 'edit' | 'view'
-const activeTask = ref(null)
+const activeTaskId = ref(null)
 
 /**
  * Maps task priorities to their display labels for the Table view and Kanban board.
@@ -73,6 +73,10 @@ onMounted(() => {
  */
 const totalPages = computed(() => Math.max(1, Math.ceil(taskStore.total / taskStore.limit)))
 
+const activeTask = computed(
+  () => taskStore.items.find((t) => t._id === activeTaskId.value) || null
+)
+
 /**
  * Resolves the stage of a task based on its status and completion state.
  * If the task has a valid status ('todo', 'wip', 'done'), it returns that status.
@@ -92,7 +96,7 @@ const resolveTaskStage = (task) => {
  * Resets the activeTask to null and updates the modal mode to 'create'.
  */
 const openCreateTask = () => {
-  activeTask.value = null
+  activeTaskId.value = null
   taskModalMode.value = 'create'
   isTaskModalOpen.value = true
 }
@@ -103,7 +107,7 @@ const openCreateTask = () => {
  * @param {Object} task - The task object to be viewed.
  */
 const openViewTask = (task) => {
-  activeTask.value = task
+  activeTaskId.value = task._id
   taskModalMode.value = 'view'
   isTaskModalOpen.value = true
 }
@@ -114,11 +118,10 @@ const openViewTask = (task) => {
  * @param {Object} task - The task object to be edited.
  */
 const openEditTask = (task) => {
-  activeTask.value = task
+  activeTaskId.value = task._id
   taskModalMode.value = 'edit'
   isTaskModalOpen.value = true
 }
-
 /**
  * Handles the event when tags are changed in the ManageTagsModal.
  * Fetches all tags again and checks if the currently selected tag filter is still valid.

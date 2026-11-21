@@ -299,10 +299,22 @@ const removeSubtask = (index) => {
  */
 const handleViewSubtaskToggle = async (index) => {
   if (!props.task) return
-  subtasks.value[index].completed = !subtasks.value[index].completed
-  await taskStore.toggleSubtask(props.task, index)
-}
 
+  const currentSubtasksSnapshot = subtasks.value.map((st) => ({
+    ...(st._id ? { _id: st._id } : {}),
+    title: st.title,
+    completed: Boolean(st.completed)
+  }))
+
+  subtasks.value[index].completed = !subtasks.value[index].completed
+
+  const syncedTask = {
+    ...props.task,
+    subtasks: currentSubtasksSnapshot
+  }
+
+  await taskStore.toggleSubtask(syncedTask, index)
+}
 /**
  * Toggles the selection of a tag in the tag selector.
  * Adds or removes the tag ID from the selectedTagIds array based on its current state.

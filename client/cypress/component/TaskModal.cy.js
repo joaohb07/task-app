@@ -181,4 +181,69 @@ describe('TaskModal Component', () => {
 
     cy.get('.form-error-msg').should('be.visible').and('contain.text', 'Task title is required.')
   })
+
+  it('persists all toggled subtasks when marking multiple subtasks as done in view mode', () => {
+    let currentTaskState = {
+      ...sampleTask,
+      subtasks: [
+        { _id: 'sub-1', title: 'First subtask', completed: false },
+        { _id: 'sub-2', title: 'Second subtask', completed: false }
+      ]
+    }
+
+    const patchPayloads = []
+
+    cy.intercept('PATCH', /\/api\/tasks\/task-101/, (req) => {
+      patchPayloads.push(req.body.subtasks)
+      currentTaskState = {
+        ...currentTaskState,
+        subtasks: req.body.subtasks
+      }
+      req.reply({
+        statusCode: 200,
+        body: currentTaskState
+      })
+    }).as('toggleSubtaskPatch')
+
+    cy.intercept('GET', /\/api\/tasks/, (req) => {
+      req.reply({
+        statusCode: 200,
+        body: {
+          tasks: [currentTaskState],
+          total: 1,
+          stats: { total: 1, completed: 0, pending: 1 }
+        }
+      })
+    }).as('refreshTasks')
+
+    cy.mountWithPlugins(TaskModal, {
+      props: {
+        open: true,
+        mode: 'view',
+        task: currentTaskState
+      }
+    })
+
+    cy.wait('@fetchAllTags')
+
+    cy.contains('.subtasks-header-row', 'Subtasks (0/2)').should('be.visible')
+
+    // Marks first subtask
+    cy.contains('.subtask-item', 'First subtask').find('input[type="checkbox"]').check()
+    cy.wait('@toggleSubtaskPatch')
+    cy.contains('.subtasks-header-row', 'Subtasks (1/2)').should('be.visible')
+
+    // Marks second subtask and makes sure both of them are completed
+    cy.contains('.subtask-item', 'Second subtask').find('input[type="checkbox"]').check()
+    cy.wait('@toggleSubtaskPatch').then(() => {
+      const latestSubtasks = patchPayloads[patchPayloads.length - 1]
+      expect(latestSubtasks).to.deep.equal([
+        { _id: 'sub-1', title: 'First subtask', completed: true },
+        { _id: 'sub-2', title: 'Second subtask', completed: true }
+      ])
+    })
+
+    cy.contains('.subtasks-header-row', 'Subtasks (2/2)').should('be.visible')
+    cy.contains('.subtask-pct-label', '100%').should('be.visible')
+  })
 })
