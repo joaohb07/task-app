@@ -82,7 +82,7 @@ const techStack = [
             Read the full architecture breakdown, API endpoints, deployment setup, and testing
             strategy.
           </p>
-          <span class="link-card-url">joaohb07.github.io/documentation/web/task_app/task_app/</span>
+          <span class="link-card-url">https://joaohb07.github.io/documentation/apps/task_app/</span>
         </a>
 
         <a
