@@ -68,7 +68,7 @@ const techStack = [
       <!-- External Links Grid -->
       <div class="links-grid">
         <a
-          href="https://joaohb07.github.io/documentation/web/task_app/task_app/"
+          href="https://joaohb07.github.io/documentation/apps/task_app/"
           target="_blank"
           rel="noopener noreferrer"
           class="cds--tile cds--tile--clickable link-card"
