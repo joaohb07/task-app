@@ -6,7 +6,7 @@ describe('About Page Navigation', () => {
     cy.contains('a', 'Official Documentation').should(
       'have.attr',
       'href',
-      'https://joaohb07.github.io/documentation/web/task_app/task_app/'
+      'https://joaohb07.github.io/documentation/apps/task_app/'
     )
     cy.contains('a', 'GitHub Repository').should(
       'have.attr',

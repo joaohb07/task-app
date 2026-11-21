@@ -20,7 +20,7 @@ describe('AboutView Component', () => {
 
     cy.contains('a.link-card', 'Official Documentation')
       .should('be.visible')
-      .and('have.attr', 'href', 'https://joaohb07.github.io/documentation/web/task_app/task_app/')
+      .and('have.attr', 'href', 'https://joaohb07.github.io/documentation/apps/task_app/')
       .and('have.attr', 'target', '_blank')
       .and('have.attr', 'rel', 'noopener noreferrer')
 
